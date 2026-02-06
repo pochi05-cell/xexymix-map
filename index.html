@@ -44,13 +44,18 @@
         .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } 
         .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
         
-        /* 아일랜드 구역 수정된 정렬 */
+        /* [수정] 아일랜드 수직 정렬 및 밀착 배치 */
         .island-y { transform: rotate(-45deg); width: 60px; height: 85px; }
         .island-br { transform: rotate(-45deg); width: 35px; height: 70px; }
-        .pos-y3 { top: 175px; left: 142px; } /* 왼쪽 위 (Y3) */
-        .pos-br2 { top: 182px; left: 212px; } /* 오른쪽 위 (Br2) */
-        .pos-br1 { top: 250px; left: 112px; } /* 왼쪽 아래 (Br1) */
-        .pos-y4 { top: 257px; left: 182px; } /* 오른쪽 아래 (Y4) */
+
+        /* BR 그룹 (왼쪽 라인 수직 배치) */
+        .pos-br1 { top: 180px; left: 130px; } /* 상단 */
+        .pos-br2 { top: 245px; left: 130px; } /* 하단 (Br1 바로 아래) */
+
+        /* Y 그룹 (오른쪽 라인 수직 배치 + BR그룹에 밀착) */
+        /* BR의 가로폭과 회전각을 고려하여 빈틈없이 붙도록 조정 */
+        .pos-y3 { top: 173px; left: 164px; } /* 상단 */
+        .pos-y4 { top: 253px; left: 164px; } /* 하단 (Y3 바로 아래) */
 
         .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } 
         .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
@@ -154,7 +159,6 @@
 <script>
     let isEdit = false; let storage = {}; let currId = '';
     
-    // 데이터 불러오기 (로컬 저장소)
     function loadData() {
         const localData = localStorage.getItem('xexymix_map_data');
         if (localData) storage = JSON.parse(localData);
