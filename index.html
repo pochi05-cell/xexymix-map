@@ -3,24 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고지도 - 풀옵션 복구</title>
+    <title>젝시믹스 재고지도 - 최종 복구판</title>
     <style>
         :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; --highlight: #ff4d4d; --dark-bg: rgba(0,0,0,0.6); }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
         
-        /* 헤더 */
+        /* 헤더 스타일 */
         .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 2000; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s; }
-        #searchInput:focus { border-color: var(--accent); }
-        .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s; }
-        .btn:active { transform: scale(0.95); }
+        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+        .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .btn.active { background: var(--highlight); color: white; }
-        #backupBtn { display: none; background: #555; color: white; }
+        #backupBtn { display: none; background: #555; color: white; } /* 기본 숨김 */
 
-        /* 수정 모드 오버레이 (배경 어두워짐) */
+        /* 수정 모드 오버레이 */
         .edit-overlay { position: fixed; inset: 0; background: var(--dark-bg); z-index: 1500; display: none; pointer-events: none; transition: opacity 0.3s; }
         body.edit-mode .edit-overlay { display: block; }
-        body.edit-mode .box { z-index: 1600; position: relative; } /* 수정 모드일 때 박스 강조 */
+        body.edit-mode .box { z-index: 1600; position: relative; } /* 수정 시 박스 강조 */
         body.edit-mode .island, body.edit-mode .island-sq { z-index: 1600 !important; }
 
         /* 사이드바 (리스트) */
@@ -28,19 +26,26 @@
         .drawer.open { left: 0; }
         .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3500; display: none; }
         .drawer-overlay.open { display: block; }
-        .drawer-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .drawer-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
+        .drawer-item:hover { background: #f9f9f9; }
 
         /* 지도 컨테이너 */
         .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; color: #555; }
-        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; transition: transform 0.1s; background-color: white; }
         
-        /* 색상 유틸 */
+        /* 카운터 라벨 (시각적 표시) */
+        .counter-label { position: absolute; top: 50px; width: 100%; text-align: center; font-size: 12px; color: #aaa; font-weight: bold; pointer-events: none; }
+
+        /* 박스 공통 */
+        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; background-color: white; transition: transform 0.1s; }
+        .box:active { transform: scale(0.95); }
+        
+        /* 색상 */
         .yellow { background-color: var(--yellow) !important; }
         .brown { background-color: var(--brown) !important; }
         .blue { background-color: var(--blue) !important; }
 
-        /* [아일랜드 박스 정밀 배치 - 밀착형] */
+        /* 아일랜드 설정 */
         .island { transform: rotate(-45deg); width: 68px; height: 68px; border-color: #222; }
         #Y3 { z-index: 10; }
         #Y4 { z-index: 10; }
@@ -51,13 +56,13 @@
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:5000; align-items:flex-end; justify-content:center; }
         .pop-content { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 25px 20px; box-sizing: border-box; animation: slideUp 0.3s; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        /* 입력창 스타일 */
+
+        /* 입력창 디자인 */
         .layer-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         textarea { width: 100%; height: 50px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; outline: none; }
         textarea:focus { border-color: var(--accent); background: white; }
 
-        /* Y3-4 전용 그리드 */
+        /* Y3-4 그리드 */
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .grid-item { background: #f9f9f9; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
         .grid-item b { display: block; font-size: 11px; margin-bottom: 4px; color: var(--accent); }
@@ -84,8 +89,12 @@
 </div>
 
 <div class="main-wrapper">
-    <div class="map-container" id="shopMap"><div class="area-label">&lt;매장&gt;</div></div>
-    <div class="map-container" id="stockMap" style="height: 400px;"><div class="area-label">&lt;창고&gt;</div></div>
+    <div class="map-container" id="shopMap">
+        <div class="area-label">&lt;매장&gt;</div>
+        <div class="counter-label">COUNTER</div> </div>
+    <div class="map-container" id="stockMap" style="height: 400px;">
+        <div class="area-label">&lt;창고&gt;</div>
+    </div>
 </div>
 
 <div id="overlay" class="modal"><div class="pop-content">
@@ -99,7 +108,7 @@
 
 <div id="backupModal" class="modal" style="align-items: center;"><div class="pop-content" style="background:#fff; border-radius:15px; width:90%;">
     <h3>데이터 백업/복구</h3>
-    <p style="font-size:12px; color:#666;">아래 코드를 복사해서 보관하거나, 보관한 코드를 붙여넣고 복구하세요.</p>
+    <p style="font-size:12px; color:#666;">데이터 코드를 복사해서 보관하거나, 붙여넣고 복구하세요.</p>
     <textarea id="backupArea" style="width:100%; height:150px; background:#f5f5f5; border:1px solid #ccc; font-family:monospace; margin-bottom:10px;"></textarea>
     <div style="display:flex; gap:10px;">
         <button onclick="importData()" style="flex:1; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold;">복구하기</button>
@@ -108,25 +117,25 @@
 </div></div>
 
 <script>
-    // [데이터 정의: 모든 박스 포함]
+    // [데이터 정의: 카운터 포함 전체]
     const shopBoxes = [
-        {id:'Y1', c:'yellow', t:70, l:60, w:90, h:35, f:2}, {id:'Y2', c:'yellow', t:70, r:30, w:90, h:35, f:2},
+        // 카운터 (복구됨)
+        {id:'Y1', c:'yellow', t:70, l:60, w:90, h:35, f:2}, 
+        {id:'Y2', c:'yellow', t:70, r:30, w:90, h:35, f:2},
         
-        // [아일랜드: 밀착형 좌표 적용]
-        {id:'Y3', c:'blue island', t:142, l:133, f:1},     // Y3-4에 딱 붙음
-        {id:'Y3-4', c:'blue island', t:175, l:158, f:4},   // 중심 (그리드 4칸)
-        {id:'Y4', c:'blue island', t:238, l:218, f:1},     // Y3-4에 딱 붙음
+        // 아일랜드 (밀착형 & 4칸 그리드 유지)
+        {id:'Y3', c:'blue island', t:142, l:133, f:1},     
+        {id:'Y3-4', c:'blue island', t:175, l:158, f:4},   
+        {id:'Y4', c:'blue island', t:238, l:218, f:1},     
         
-        {id:'Br1', c:'brown island-sq', t:210, l:95, f:4}, // 왼쪽 분리
-        {id:'Br2', c:'brown island-sq', t:255, l:140, f:4},// 왼쪽 분리
+        {id:'Br1', c:'brown island-sq', t:210, l:95, f:4}, 
+        {id:'Br2', c:'brown island-sq', t:255, l:140, f:4},
 
-        // [측면 B 시리즈]
+        // 측면 & 하단 박스들
         {id:'B1', c:'blue', t:130, l:25, w:38, h:55, f:1}, {id:'B2', c:'blue', t:195, l:25, w:38, h:55, f:1},
         {id:'B3', c:'blue', t:260, l:25, w:38, h:55, f:1}, {id:'B4', c:'blue', t:325, l:25, w:38, h:55, f:1},
         {id:'B5', c:'blue', t:130, r:25, w:38, h:55, f:1}, {id:'B6', c:'blue', t:195, r:25, w:38, h:55, f:1},
         {id:'B7', c:'blue', t:260, r:25, w:38, h:55, f:1}, {id:'B8', c:'blue', t:325, r:25, w:38, h:55, f:1},
-        
-        // [하단 박스들]
         {id:'B9', c:'blue', t:395, l:85, w:70, h:38, f:1}, {id:'B10', c:'blue', t:395, r:85, w:70, h:38, f:1},
         {id:'Y5', c:'yellow', t:450, r:25, w:38, h:70, f:4}, {id:'Y6', c:'yellow', t:450, l:220, w:38, h:70, f:4},
         {id:'Br3', c:'brown', t:585, l:65, w:32, h:50, f:2}, {id:'Br4', c:'brown', t:645, l:65, w:32, h:50, f:2},
@@ -140,7 +149,7 @@
     ];
 
     let isEdit = false, currId = null;
-    let storage = JSON.parse(localStorage.getItem('xexy_full_v1')) || {};
+    let storage = JSON.parse(localStorage.getItem('xexy_full_v2')) || {};
 
     function init() {
         createBoxes(shopBoxes, 'shopMap', false);
@@ -162,7 +171,7 @@
         });
     }
 
-    // [기능: 팝업 열기 (Y3-4 그리드 포함)]
+    // 팝업 열기 (Y3-4 그리드 분기 처리)
     function openPop(id, f) {
         currId = id; document.getElementById('popTitle').innerText = id;
         const saved = storage[id] || [];
@@ -171,7 +180,7 @@
         if(id === 'Y3-4') {
             html = `<div class="grid-container">`;
             for(let i=0; i<4; i++) {
-                html += `<div class="grid-item"><b>${['상단좌', '상단우', '하단좌', '하단우'][i]}</b><textarea id="ipt_${i}" ${!isEdit?'readonly':''}>${saved[i]||''}</textarea></div>`;
+                html += `<div class="grid-item"><b>영역 ${i+1}</b><textarea id="ipt_${i}" ${!isEdit?'readonly':''}>${saved[i]||''}</textarea></div>`;
             }
             html += `</div>`;
         } else {
@@ -183,19 +192,16 @@
         document.getElementById('overlay').style.display = 'flex';
     }
 
-    // [기능: 수정 모드 토글 + 오버레이]
+    // 수정 모드 토글 (백업 버튼 표시)
     function toggleEdit() {
         isEdit = !isEdit;
         document.body.classList.toggle('edit-mode', isEdit);
         document.getElementById('editBtn').classList.toggle('active', isEdit);
-        // 백업 버튼은 수정 모드일 때만 보임
         document.getElementById('backupBtn').style.display = isEdit ? 'flex' : 'none';
-        
-        // 수정모드 해제 시 오버레이 숨김
         if(!isEdit) document.querySelector('.edit-overlay').style.display = 'none';
     }
 
-    // [기능: 리스트 드로어]
+    // 리스트 사이드바 토글
     function toggleDrawer() {
         document.getElementById('drawer').classList.toggle('open');
         document.querySelector('.drawer-overlay').classList.toggle('open');
@@ -204,18 +210,28 @@
 
     function updateDrawer() {
         let html = '';
-        for (let key in storage) {
+        const sortedKeys = Object.keys(storage).sort();
+        sortedKeys.forEach(key => {
             const items = storage[key].filter(v => v.trim() !== '');
             if(items.length > 0) {
-                html += `<div class="drawer-item" onclick="toggleDrawer(); location.href='#${key}'; document.getElementById('${key}').classList.add('blink');">
-                    <b>${key}:</b> ${items.join(', ')}
+                html += `<div class="drawer-item" onclick="moveToBox('${key}')">
+                    <span style="color:var(--accent); font-weight:bold;">${key}</span>: ${items.join(', ')}
                 </div>`;
             }
-        }
-        document.getElementById('drawerList').innerHTML = html || '<p style="text-align:center; color:#999;">저장된 데이터가 없습니다.</p>';
+        });
+        document.getElementById('drawerList').innerHTML = html || '<p style="text-align:center; color:#999; margin-top:20px;">저장된 데이터가 없습니다.</p>';
     }
 
-    // [기능: 백업/복구]
+    function moveToBox(id) {
+        toggleDrawer();
+        const target = document.getElementById(id);
+        if(target) {
+            target.classList.add('blink');
+            target.scrollIntoView({behavior:'smooth', block:'center'});
+        }
+    }
+
+    // 백업/복구 로직
     function openBackup() {
         document.getElementById('backupArea').value = JSON.stringify(storage);
         document.getElementById('backupModal').style.display = 'flex';
@@ -226,18 +242,18 @@
             const val = document.getElementById('backupArea').value;
             if(!val) return;
             storage = JSON.parse(val);
-            localStorage.setItem('xexy_full_v1', JSON.stringify(storage));
-            alert("복구가 완료되었습니다!");
+            localStorage.setItem('xexy_full_v2', JSON.stringify(storage));
+            alert("복구 완료! 페이지를 새로고침합니다.");
             location.reload();
-        } catch(e) { alert("데이터 코드가 올바르지 않습니다."); }
+        } catch(e) { alert("잘못된 데이터 형식입니다."); }
     }
 
     function save() {
         const ipts = document.querySelectorAll('#popLayers textarea');
         storage[currId] = Array.from(ipts).map(i => i.value);
-        localStorage.setItem('xexy_full_v1', JSON.stringify(storage));
-        updateDrawer();
+        localStorage.setItem('xexy_full_v2', JSON.stringify(storage));
         closePop();
+        updateDrawer();
     }
 
     function closePop() { document.getElementById('overlay').style.display = 'none'; }
