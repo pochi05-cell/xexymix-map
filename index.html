@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>젝시믹스 재고지도</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/850/850810.png">
+    
     <style>
         :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
-        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; transition: background 0.3s; }
+        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: env(safe-area-inset-top) 0 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; transition: background 0.3s; }
         
-        /* 수정 모드 배경 효과 */
         body.edit-mode-active { background: #1a1a1a; }
         body.edit-mode-active .map-container { background: #e0e0e0; transition: 0.3s; }
         body.edit-mode-active .area-bar { background: #d0d0d0; }
@@ -29,7 +32,7 @@
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* 매장 창고 좌표 설정 */
+        /* 매장/창고 좌표 (기존과 동일) */
         .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
         .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
         .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
@@ -46,7 +49,7 @@
 
         /* 팝업 스타일 */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:flex-end; }
-        .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
+        .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
         .layer-stack { display: flex; flex-direction: column-reverse; gap: 8px; overflow-y: auto; padding: 10px 0; }
         .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
         .layer-label { width: 35px; font-size: 13px; font-weight: bold; color: #333; text-align: center; border-right: 2px solid #ff4d4d; margin-right: 5px; }
@@ -56,7 +59,7 @@
 <body>
 
 <div class="global-header">
-    <input type="text" id="searchInput" placeholder="데이터 로딩 중..." onkeyup="searchGlobal(this.value)">
+    <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="searchGlobal(this.value)">
     <button id="editBtn" class="icon-btn" onclick="toggleEdit()">✏️</button>
 </div>
 
@@ -122,31 +125,23 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhFYws68vkmdvGntDA0ItTMopwGnSV9glALHN09Cda9SxISlS4hmDkijwGD07ya8pO/exec";
     let isEdit = false; let storage = {}; let currId = '';
-
     function loadData() {
-        const script = document.createElement('script');
-        script.src = `${SCRIPT_URL}?callback=setData&t=${new Date().getTime()}`;
-        document.body.appendChild(script);
+        const localData = localStorage.getItem('xexymix_map_data');
+        if (localData) storage = JSON.parse(localData);
     }
-
-    window.setData = function(data) { storage = data; document.getElementById('searchInput').placeholder = "품번 검색..."; };
     window.onload = loadData;
-
     function toggleEdit() {
         isEdit = !isEdit;
         document.getElementById('editBtn').classList.toggle('active', isEdit);
         document.body.classList.toggle('edit-mode-active', isEdit);
     }
-
     function openPop(id, layers) {
         currId = id;
         const container = document.getElementById('popLayers');
         container.innerHTML = '';
         document.getElementById('popTitle').innerText = id + " 위치 정보";
         const saved = storage[id] || [];
-        
         for(let i=1; i<=layers; i++) {
             container.innerHTML += `
                 <div class="layer-item">
@@ -157,24 +152,19 @@
                 </div>`;
         }
         document.getElementById('popFooter').innerHTML = isEdit ? 
-            `<button onclick="saveAndClose()" style="width:100%; padding:16px; background:#4CAF50; color:white; border:none; border-radius:12px; font-weight:bold;">저장하기</button>` : 
+            `<button onclick="saveToLocal()" style="width:100%; padding:16px; background:#4CAF50; color:white; border:none; border-radius:12px; font-weight:bold;">저장하기</button>` : 
             `<button onclick="closePopOnly()" style="width:100%; padding:16px; background:#333; color:white; border:none; border-radius:12px;">닫기</button>`;
         document.getElementById('overlay').style.display = 'flex';
     }
-
-    function saveAndClose() {
-        const btn = document.querySelector('#popFooter button');
-        btn.disabled = true; btn.innerText = "저장 중...";
+    function saveToLocal() {
         const inputs = document.querySelectorAll('.layer-textarea');
         const arr = [];
         inputs.forEach(ipt => { arr[ipt.dataset.idx] = ipt.value; });
         storage[currId] = arr;
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(storage), mode: 'no-cors' })
-        .then(() => { document.getElementById('overlay').style.display = 'none'; setTimeout(loadData, 500); });
+        localStorage.setItem('xexymix_map_data', JSON.stringify(storage));
+        document.getElementById('overlay').style.display = 'none';
     }
-
     function closePopOnly() { document.getElementById('overlay').style.display = 'none'; }
-
     function searchGlobal(q) {
         document.querySelectorAll('.box').forEach(b => b.classList.remove('blink'));
         if(!q.trim()) return;
