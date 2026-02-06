@@ -3,322 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고 관리 - 컬러복구판</title>
+    <title>젝시믹스 재고지도 - 전체 복구 완결판</title>
     <style>
-        :root { 
-            --yellow: #ffdb6d; 
-            --brown: #d9d2ae; 
-            --blue: #cfd8dc; 
-            --gray-zone: #eeeeee;
-            --gray-border: #bdbdbd;
-            --accent: #333; 
-            --btn-blue: #2196F3;
-            --highlight: #ff5252; 
-        }
-        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+        :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; --highlight: #ff4d4d; }
+        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; }
         
-        /* 헤더 */
-        .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+        /* UI 및 헤더 */
+        .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 1000; box-sizing: border-box; }
+        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
         .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .btn.active { background: var(--highlight); color: white; }
+        #backupBtn { display: none; background: #444; color: white; }
 
-        /* 지도 컨테이너 */
-        .map-container { background: white; width: 360px; height: 800px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; color: #555; border-bottom: 1px solid #ddd; }
+        /* 지도 및 박스 기본 */
+        .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; }
+        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; }
         
-        /* 카운터 구역 (Y5, Y6 아래) */
-        .counter-zone {
-            position: absolute; top: 540px; left: 15px; right: 15px; height: 90px;
-            border: 2px dashed var(--gray-border); background-color: var(--gray-zone); border-radius: 10px;
-            display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; z-index: 0;
-        }
-        .counter-text { font-size: 14px; font-weight: bold; color: #777; margin-bottom: 5px;}
+        /* 색상 클래스 */
+        .yellow { background-color: var(--yellow) !important; }
+        .brown { background-color: var(--brown) !important; }
+        .blue { background-color: var(--blue) !important; }
 
-        /* 박스 공통 디자인 */
-        .box { 
-            position: absolute !important; 
-            border: 1.5px solid #555; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 10px; font-weight: bold; cursor: pointer; 
-            border-radius: 3px; box-sizing: border-box; 
-            box-shadow: 1px 1px 3px rgba(0,0,0,0.15);
-            transition: transform 0.1s; 
-            z-index: 10;
-            color: #333;
-        }
-        .box:active { transform: scale(0.95); }
+        /* 아일랜드 특수 설정 */
+        .island { transform: rotate(-45deg); width: 68px; height: 68px; }
+        #Y3 { z-index: 10; }
+        #Y4 { z-index: 10; }
+        #Y3-4 { width: 90px !important; height: 90px !important; z-index: 100; font-size: 13px; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+        .island-sq { transform: rotate(-45deg); width: 45px !important; height: 45px !important; z-index: 50; }
 
-        /* [색상 복구] */
-        .yellow { background-color: var(--yellow); }
-        .brown { background-color: var(--brown); }
-        .blue { background-color: var(--blue); }
-        
-        /* 아일랜드 및 특수 박스 */
-        .island { transform: rotate(-45deg); width: 68px; height: 68px; border-radius: 8px; }
-        #Y3 { z-index: 30; } 
-        #Y3-4 { width: 90px !important; height: 90px !important; z-index: 20; font-size: 13px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .island-sq { transform: rotate(-45deg); width: 45px !important; height: 45px !important; z-index: 40; }
+        /* 2x2 그리드 레이아웃 */
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .grid-item { background: #f9f9f9; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
+        .grid-item b { display: block; font-size: 11px; margin-bottom: 4px; color: var(--accent); }
 
-        /* 수정 모드 */
-        .edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; display: none; }
-        body.edit-mode .edit-overlay { display: block; }
-        body.edit-mode .box { z-index: 1600; border: 2px solid white; box-shadow: 0 0 10px white; }
-        body.edit-mode .island, body.edit-mode .island-sq { transform: rotate(-45deg) !important; z-index: 1600 !important; }
-
-        /* 리스트 사이드바 */
-        .drawer { position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: white; z-index: 4000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
-        .drawer.open { left: 0; }
-        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3500; display: none; }
-        .drawer-overlay.open { display: block; }
-
-        .drawer-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
-        .drawer-header h3 { margin: 0; font-size: 16px; }
-        .add-btn { background: var(--btn-blue); color: white; border: none; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; }
-
-        /* 품번 입력 영역 */
-        #addSection { display: none; padding: 15px; background: #e3f2fd; border-bottom: 1px solid #bbdefb; }
-        .input-row { display: flex; gap: 5px; margin-top: 5px; }
-        .input-row input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .input-row button { background: var(--accent); color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-
-        .drawer-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .drawer-item { padding: 10px; border-bottom: 1px solid #f5f5f5; font-size: 13px; cursor: pointer; display:flex; justify-content:space-between; }
-        .drawer-item b { color: #d81b60; margin-right: 5px; }
-
-        /* 팝업 모달 */
-        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:5000; align-items:flex-end; justify-content:center; }
-        .pop-content { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 25px 20px; box-sizing: border-box; }
-        .layer-row { margin-bottom: 10px; }
-        textarea { width: 100%; height: 50px; border: 1px solid #ddd; border-radius: 5px; padding: 8px; box-sizing: border-box; resize: none; }
-
-        /* 그리드 (Y3-4) */
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
-        .grid-item textarea { height: 40px; }
-
-        .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; z-index: 2000 !important; }
+        .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; z-index: 1100 !important; }
         @keyframes blink { 50% { opacity: 0.3; } }
-        
-        #assignMsg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--highlight); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 3000; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+        /* 모달 및 기타 */
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:3000; align-items:flex-end; justify-content:center; }
+        .pop-content { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 20px; box-sizing: border-box; }
+        .layer-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; cursor: pointer; }
+        textarea { width: 100%; height: 50px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-<div class="edit-overlay"></div>
-<div class="drawer-overlay" onclick="closeDrawer()"></div>
-<div id="assignMsg">지도의 박스를 클릭해서 배치하세요!</div>
-
-<div id="drawer" class="drawer">
-    <div class="drawer-header">
-        <h3>📦 재고 리스트</h3>
-        <button class="add-btn" onclick="toggleAddSection()">+ 품번추가</button>
-    </div>
-    
-    <div id="addSection">
-        <div style="font-size:12px; color:#555; margin-bottom:4px;">새로운 품번 입력:</div>
-        <div class="input-row">
-            <input type="text" id="newCode" placeholder="예: XP9108">
-            <button onclick="startAssignMode()">배치</button> </div>
-    </div>
-
-    <div class="drawer-list" id="drawerList"></div>
-</div>
-
 <div class="global-header">
-    <button class="btn" onclick="openDrawer()">📋</button>
-    <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="search(this.value)">
+    <button class="btn">📋</button>
+    <input type="text" id="searchInput" placeholder="검색..." onkeyup="search(this.value)">
+    <button id="backupBtn" class="btn" onclick="openBackup()">💾</button>
     <button id="editBtn" class="btn" onclick="toggleEdit()">✏️</button>
 </div>
 
 <div class="main-wrapper">
-    <div class="map-container" id="shopMap">
-        <div class="area-label">&lt;매장&gt;</div>
-        
-        <div class="counter-zone">
-            <span class="counter-text">카운터 (Counter)</span>
-        </div>
-    </div>
-    <div class="map-container" id="stockMap" style="height: 400px;">
-        <div class="area-label">&lt;창고&gt;</div>
-    </div>
+    <div class="map-container" id="shopMap"><div class="area-label">&lt;매장&gt;</div></div>
+    <div class="map-container" id="stockMap" style="height: 400px;"><div class="area-label">&lt;창고&gt;</div></div>
 </div>
 
-<div id="overlay" class="modal"><div class="pop-content">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 id="popTitle" style="margin:0;"></h3>
-        <button onclick="closePop()" style="border:none; background:none; font-size:20px;">✕</button>
-    </div>
-    <div id="popLayers"></div>
-    <button onclick="save()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold;">저장</button>
-</div></div>
+<div id="overlay" class="modal"><div class="pop-content"><h3 id="popTitle"></h3><div id="popLayers"></div><button onclick="save()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold;">저장</button><button onclick="closePop()" style="width:100%; padding:10px; background:#eee; border:none; border-radius:10px; margin-top:8px;">닫기</button></div></div>
 
 <script>
-    // [데이터 정의: 색상 복구 완료]
-    // c: 'blue' | 'yellow' | 'brown'
+    // 모든 매장 박스 데이터 (누락 없이 전체 복구)
     const shopBoxes = [
-        // 아일랜드 (파랑, 갈색 혼합)
-        {id:'Y3', t:155, l:145, f:1, c:'blue island'},      
-        {id:'Y3-4', t:175, l:158, f:4, c:'blue island'},    
-        {id:'Y4', t:238, l:218, f:1, c:'blue island'},      
-        {id:'Br1', t:210, l:95, f:4, c:'brown island-sq'}, 
-        {id:'Br2', t:255, l:140, f:4, c:'brown island-sq'},
-
-        // 벽면/주변 (파랑)
-        {id:'B1', t:130, l:25, w:38, h:55, f:1, c:'blue'}, {id:'B2', t:195, l:25, w:38, h:55, f:1, c:'blue'},
-        {id:'B3', t:260, l:25, w:38, h:55, f:1, c:'blue'}, {id:'B4', t:325, l:25, w:38, h:55, f:1, c:'blue'},
-        {id:'B5', t:130, r:25, w:38, h:55, f:1, c:'blue'}, {id:'B6', t:195, r:25, w:38, h:55, f:1, c:'blue'},
-        {id:'B7', t:260, r:25, w:38, h:55, f:1, c:'blue'}, {id:'B8', t:325, r:25, w:38, h:55, f:1, c:'blue'},
-        {id:'B9', t:395, l:85, w:70, h:38, f:1, c:'blue'}, {id:'B10', t:395, r:85, w:70, h:38, f:1, c:'blue'},
+        {id:'Y1', c:'yellow', t:70, l:60, w:90, h:35, f:2}, {id:'Y2', c:'yellow', t:70, r:30, w:90, h:35, f:2},
         
-        // 중앙/하단 행거 (노랑)
-        {id:'Y5', t:450, r:25, w:38, h:70, f:4, c:'yellow'}, 
-        {id:'Y6', t:450, l:220, w:38, h:70, f:4, c:'yellow'},
-        
-        // 카운터 (노랑)
-        {id:'Y1', t:555, l:60, w:90, h:50, f:2, c:'yellow'}, 
-        {id:'Y2', t:555, r:30, w:90, h:50, f:2, c:'yellow'},
+        // 아일랜드 그룹 (Y3-4 정사각형화 및 입체 배치)
+        {id:'Y3', c:'blue island', t:135, l:125, f:1},
+        {id:'Y3-4', c:'blue island', t:175, l:158, f:4}, // 그리드 4칸
+        {id:'Y4', c:'blue island', t:238, l:218, f:1},
+        {id:'Br1', c:'brown island-sq', t:210, l:95, f:4},
+        {id:'Br2', c:'brown island-sq', t:255, l:140, f:4},
 
-        // 매장 안쪽/뒤쪽 (갈색, 노랑)
-        {id:'Br3', t:650, l:65, w:32, h:50, f:2, c:'brown'}, {id:'Br4', t:710, l:65, w:32, h:50, f:2, c:'brown'},
-        {id:'Y7', t:650, r:30, w:38, h:75, f:4, c:'yellow'}, 
-        {id:'Y8', t:720, l:145, w:80, h:45, f:2, c:'yellow'},
-        {id:'Y9', t:720, l:235, w:80, h:45, f:2, c:'yellow'}
+        // 측면 파란 박스 시리즈
+        {id:'B1', c:'blue', t:130, l:25, w:38, h:55, f:1}, {id:'B2', c:'blue', t:195, l:25, w:38, h:55, f:1},
+        {id:'B3', c:'blue', t:260, l:25, w:38, h:55, f:1}, {id:'B4', c:'blue', t:325, l:25, w:38, h:55, f:1},
+        {id:'B5', c:'blue', t:130, r:25, w:38, h:55, f:1}, {id:'B6', c:'blue', t:195, r:25, w:38, h:55, f:1},
+        {id:'B7', c:'blue', t:260, r:25, w:38, h:55, f:1}, {id:'B8', c:'blue', t:325, r:25, w:38, h:55, f:1},
+        
+        // 하단 박스 시리즈
+        {id:'B9', c:'blue', t:395, l:85, w:70, h:38, f:1}, {id:'B10', c:'blue', t:395, r:85, w:70, h:38, f:1},
+        {id:'Y5', c:'yellow', t:450, r:25, w:38, h:70, f:4}, {id:'Y6', c:'yellow', t:450, l:220, w:38, h:70, f:4},
+        {id:'Br3', c:'brown', t:585, l:65, w:32, h:50, f:2}, {id:'Br4', c:'brown', t:645, l:65, w:32, h:50, f:2},
+        {id:'Y7', c:'yellow', t:585, r:30, w:38, h:75, f:4}, {id:'Y8', c:'yellow', t:650, l:145, w:80, h:45, f:2},
+        {id:'Y9', c:'yellow', t:650, l:235, w:80, h:45, f:2}
     ];
 
+    // 창고 박스 데이터
     const stockBoxes = [
-        // 창고는 보통 파랑색 (blue)
-        {id:'S1', t:70, l:10, c:'blue'}, {id:'S2', t:70, l:78, c:'blue'}, {id:'S3', t:70, l:146, c:'blue'}, 
-        {id:'S4', t:70, l:214, c:'blue'}, {id:'S5', t:70, l:282, c:'blue'},
-        {id:'S6', t:140, l:15, w:55, h:90, c:'blue'}, {id:'S7', t:140, r:15, w:55, h:90, c:'blue'}, 
-        {id:'S8', t:240, l:75, w:55, h:90, c:'blue'}, {id:'S9', t:305, l:135, w:85, h:45, c:'blue'}
+        {id:'S1', t:70, l:10}, {id:'S2', t:70, l:78}, {id:'S3', t:70, l:146}, {id:'S4', t:70, l:214}, {id:'S5', t:70, l:282},
+        {id:'S6', t:140, l:15, w:55, h:90}, {id:'S7', t:140, r:15, w:55, h:90}, {id:'S8', t:240, l:75, w:55, h:90}, {id:'S9', t:305, l:135, w:85, h:45}
     ];
 
-    let isEdit = false;
-    let isAssignMode = false;
-    let assignCode = "";
-    let currId = null;
-    let storage = JSON.parse(localStorage.getItem('xexy_final_v5')) || {};
+    let isEdit = false, currId = null;
+    let storage = JSON.parse(localStorage.getItem('xexy_v_final_data')) || {};
 
     function init() {
-        createBoxes(shopBoxes, 'shopMap');
-        createBoxes(stockBoxes, 'stockMap');
-        updateDrawer();
+        createBoxes(shopBoxes, 'shopMap', false);
+        createBoxes(stockBoxes, 'stockMap', true);
     }
 
-    function createBoxes(data, targetId) {
+    function createBoxes(data, targetId, isStock) {
         const target = document.getElementById(targetId);
         data.forEach(b => {
             const div = document.createElement('div');
             div.id = b.id;
-            // 색상 클래스(c) 적용
-            div.className = `box ${b.c || 'blue'}`; 
+            div.className = `box ${isStock ? 'blue' : b.c}`;
             div.innerText = b.id;
-            div.style.cssText = `top:${b.t}px; ${b.l?'left:'+b.l+'px': (b.r?'right:'+b.r+'px':'')}; width:${b.w||60}px; height:${b.h||40}px;`;
-            div.onclick = () => handleBoxClick(b.id, b.f || 1);
+            let pos = `top:${b.t}px; ${b.l?'left:'+b.l+'px': (b.r?'right:'+b.r+'px':'')}; width:${b.w||60}px; height:${b.h||40}px;`;
+            div.style.cssText = pos;
+            div.onclick = () => openPop(b.id, b.f || 1);
             target.appendChild(div);
         });
-    }
-
-    function handleBoxClick(id, maxF) {
-        if (isAssignMode) {
-            saveToBox(id, maxF, assignCode);
-        } else {
-            openPop(id, maxF);
-        }
-    }
-
-    function toggleAddSection() {
-        const sec = document.getElementById('addSection');
-        sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function startAssignMode() {
-        const val = document.getElementById('newCode').value.trim();
-        if(!val) { alert("품번을 입력하세요!"); return; }
-        assignCode = val;
-        isAssignMode = true;
-        closeDrawer(); 
-        document.getElementById('assignMsg').style.display = 'block'; 
-        document.getElementById('assignMsg').innerText = `'${val}' 배치할 박스를 선택하세요!`;
-    }
-
-    function saveToBox(id, maxF, code) {
-        if(!storage[id]) storage[id] = new Array(maxF).fill("");
-        let idx = storage[id].findIndex(v => v === "");
-        if(idx === -1) idx = maxF - 1; 
-        storage[id][idx] = code;
-        localStorage.setItem('xexy_final_v5', JSON.stringify(storage));
-        isAssignMode = false;
-        assignCode = "";
-        document.getElementById('newCode').value = "";
-        document.getElementById('assignMsg').style.display = 'none';
-        alert(`[${id}] 박스에 저장되었습니다.`);
-        updateDrawer();
     }
 
     function openPop(id, f) {
         currId = id; document.getElementById('popTitle').innerText = id;
         const saved = storage[id] || [];
         let html = '';
+
         if(id === 'Y3-4') {
             html = `<div class="grid-container">`;
-            const labels = ['좌상', '우상', '좌하', '우하'];
             for(let i=0; i<4; i++) {
-                html += `<div class="grid-item"><b>${labels[i]}</b><textarea id="ipt_${i}">${saved[i]||''}</textarea></div>`;
+                html += `<div class="grid-item"><b>영역 ${i+1}</b><textarea id="ipt_${i}" ${!isEdit?'readonly':''}>${saved[i]||''}</textarea></div>`;
             }
             html += `</div>`;
         } else {
             for(let i=0; i<f; i++) {
-                html += `<div class="layer-row"><b>${i+1}칸</b><textarea id="ipt_${i}">${saved[i]||''}</textarea></div>`;
+                html += `<div class="layer-row"><b>${i+1}F</b><textarea id="ipt_${i}" ${!isEdit?'readonly':''}>${saved[i]||''}</textarea></div>`;
             }
         }
         document.getElementById('popLayers').innerHTML = html;
         document.getElementById('overlay').style.display = 'flex';
     }
 
+    function toggleEdit() {
+        isEdit = !isEdit;
+        document.getElementById('editBtn').classList.toggle('active', isEdit);
+        document.getElementById('backupBtn').style.display = isEdit ? 'flex' : 'none';
+    }
+
     function save() {
         const ipts = document.querySelectorAll('#popLayers textarea');
         storage[currId] = Array.from(ipts).map(i => i.value);
-        localStorage.setItem('xexy_final_v5', JSON.stringify(storage));
-        updateDrawer();
+        localStorage.setItem('xexy_v_final_data', JSON.stringify(storage));
         closePop();
     }
 
-    function updateDrawer() {
-        let html = '';
-        const sortedKeys = Object.keys(storage).sort();
-        sortedKeys.forEach(key => {
-            const items = storage[key].filter(v => v && v.trim() !== '');
-            if(items.length > 0) {
-                html += `<div class="drawer-item" onclick="moveToBox('${key}')"><span><b>[${key}]</b> ${items.join(', ')}</span></div>`;
-            }
-        });
-        document.getElementById('drawerList').innerHTML = html || '<p style="text-align:center; color:#999; margin-top:20px;">저장된 품번이 없습니다.</p>';
-    }
-
-    function moveToBox(id) {
-        closeDrawer();
-        const target = document.getElementById(id);
-        if(target) {
-            target.classList.add('blink');
-            target.scrollIntoView({behavior:'smooth', block:'center'});
-        }
-    }
-
-    function toggleEdit() {
-        isEdit = !isEdit;
-        document.body.classList.toggle('edit-mode', isEdit);
-        document.getElementById('editBtn').classList.toggle('active', isEdit);
-    }
-
-    function openDrawer() {
-        document.getElementById('drawer').classList.add('open');
-        document.querySelector('.drawer-overlay').classList.add('open');
-    }
-    function closeDrawer() {
-        document.getElementById('drawer').classList.remove('open');
-        document.querySelector('.drawer-overlay').classList.remove('open');
-    }
     function closePop() { document.getElementById('overlay').style.display = 'none'; }
     
     function search(q) {
@@ -328,7 +159,6 @@
             if(storage[id].some(v => v.toLowerCase().includes(q.toLowerCase()))) {
                 const target = document.getElementById(id);
                 if(target) target.classList.add('blink');
-                target.scrollIntoView({behavior:'smooth', block:'center'});
             }
         }
     }
