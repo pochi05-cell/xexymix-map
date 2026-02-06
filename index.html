@@ -3,56 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>젝시믹스 재고지도</title>
+    <title>젝시믹스 재고지도 - 스마트 배치</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <style>
-        :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
-        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: env(safe-area-inset-top) 0 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; }
+        :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; --accent: #4CAF50; }
+        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: env(safe-area-inset-top) 0 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         
-        /* 헤더 가로배치 조절 */
+        /* 헤더 가로배치 */
         .global-header { width: 360px; background: white; display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 200; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
-        
-        /* 검색창: 애니메이션 추가 */
-        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; transition: all 0.3s ease; }
-        
-        /* 아이콘 버튼 공통 */
-        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease; }
+        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .icon-btn.active { background: #ff4d4d; color: white; }
 
-        /* 백업 버튼: 기본적으로 크기가 0이고 숨겨짐 */
-        #backupToggleBtn { display: none; background: #e3f2fd; color: #2196F3; opacity: 0; transform: scale(0.5); }
-        #backupToggleBtn.show { display: flex; opacity: 1; transform: scale(1); }
+        /* 품번 리스트 서랍 (왼쪽) */
+        #productDrawer { position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: #fff; z-index: 1000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+        #productDrawer.open { left: 0; }
+        .drawer-header { padding: 20px; background: #eee; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .drawer-content { flex: 1; overflow-y: auto; padding: 10px; }
+        .product-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .product-item:active { background: #f0f0f0; }
+        .product-item.selected { background: #e8f5e9; border: 2px solid var(--accent); border-radius: 8px; }
+        #newProductInput { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
 
-        /* 백업 섹션: 아예 안보이게 설정 */
-        .backup-section { 
-            display: none; /* 평소에는 아예 제거 */
-            width: 360px; background: #444; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; color: white; flex-direction: column; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden;
-        }
-        .backup-section.open { display: flex; padding: 15px; }
-        
-        .backup-btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .backup-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
-        #backupArea { width: 100%; height: 60px; border-radius: 6px; font-size: 10px; padding: 8px; box-sizing: border-box; resize: none; border: 1px solid #666; background: #222; color: #eee; }
+        /* 배치 모드 안내바 */
+        #placementBar { display: none; width: 360px; background: var(--accent); color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; font-size: 14px; font-weight: bold; }
 
-        /* 지도 레이아웃 */
+        /* 백업 섹션 */
+        #backupToggleBtn { display: none; background: #e3f2fd; color: #2196F3; }
+        #backupToggleBtn.show { display: flex; }
+        .backup-section { display: none; width: 360px; background: #444; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; color: white; flex-direction: column; gap: 10px; padding: 15px; }
+        .backup-section.open { display: flex; }
+        #backupArea { width: 100%; height: 60px; border-radius: 6px; font-size: 10px; padding: 8px; box-sizing: border-box; background: #222; color: #eee; border: none; }
+
+        /* 지도 공통 */
         .main-wrapper { display: flex; flex-direction: column; gap: 15px; align-items: center; }
-        .map-container { background: white; width: 360px; height: 750px; position: relative; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden; flex-shrink: 0; }
-        .area-bar { background: #f8f8f8; height: 45px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; border-bottom: 1px solid #eee; color: #333; }
-        
-        .box { position: absolute; border: 1.5px solid #333; cursor: pointer; z-index: 10; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background-clip: padding-box; }
+        .map-container { background: white; width: 360px; height: 750px; position: relative; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden; }
+        .area-bar { background: #f8f8f8; height: 45px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-bottom: 1px solid #eee; }
+        .box { position: absolute; border: 1.5px solid #333; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; }
         .yellow { background: var(--yellow); } .brown { background: var(--brown); } .blue { background: var(--blue); }
-        .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
+        .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* 아일랜드 정렬 좌표 유지 */
+        /* 위치 좌표 (기존과 동일) */
         .island-y { transform: rotate(-45deg); width: 68px; height: 68px; } 
         .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
         .pos-y3 { top: 160px; left: 135px; } .pos-y4 { top: 208px; left: 183px; } 
         .pos-br1 { top: 208px; left: 111px; } .pos-br2 { top: 240px; left: 143px; } 
-
-        /* 집기/창고 좌표 데이터 생략 없이 모두 유지함 */
         .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
         .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
         .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
@@ -67,34 +65,46 @@
 
         /* 팝업 UI */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:flex-end; }
-        .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
+        .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px 20px 40px; box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
         .layer-stack { display: flex; flex-direction: column-reverse; gap: 8px; overflow-y: auto; padding: 10px 0; }
-        .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; }
-        .layer-label { width: 35px; font-size: 13px; font-weight: bold; color: #666; text-align: center; }
-        .layer-textarea { flex: 1; height: 45px; border: 1px solid #ddd; border-radius: 6px; padding: 8px; font-size: 14px; resize: none; box-sizing: border-box; }
+        .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
+        .layer-textarea { flex: 1; height: 45px; border: 1px solid #ddd; border-radius: 6px; padding: 8px; font-size: 14px; }
     </style>
 </head>
 <body>
 
+<div id="productDrawer">
+    <div class="drawer-header">
+        <span>📦 품번 마스터 리스트</span>
+        <button onclick="toggleDrawer()" style="border:none; background:none; font-size:20px;">×</button>
+    </div>
+    <div class="drawer-content">
+        <input type="text" id="newProductInput" placeholder="새 품번 입력 후 엔터" onkeypress="addProduct(event)">
+        <div id="productList"></div>
+    </div>
+</div>
+
 <div class="global-header">
+    <button class="icon-btn" onclick="toggleDrawer()">📋</button>
     <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="searchGlobal(this.value)">
     <button id="backupToggleBtn" class="icon-btn" onclick="toggleBackupSection()">📥</button>
     <button id="editBtn" class="icon-btn" onclick="toggleEdit()">✏️</button>
 </div>
 
+<div id="placementBar">원하는 집기의 층을 클릭하여 [ <span id="selectedPName"></span> ] 배치</div>
+
 <div id="backupSection" class="backup-section">
     <div style="font-size: 14px; font-weight: bold; color: #ffdb6d;">📊 데이터 백업/복구</div>
-    <textarea id="backupArea" placeholder="여기에 백업 데이터를 붙여넣거나, 추출 버튼을 누르세요."></textarea>
-    <div class="backup-btn-group">
-        <button class="backup-btn" style="background:#2196F3; color:white;" onclick="exportData()">데이터 추출</button>
-        <button class="backup-btn" style="background:#FF9800; color:white;" onclick="importData()">데이터 복구</button>
+    <textarea id="backupArea" placeholder="백업 데이터를 여기에 붙여넣으세요."></textarea>
+    <div style="display:flex; gap:10px; margin-top:5px;">
+        <button class="backup-btn" style="background:#2196F3; color:white;" onclick="exportData()">추출</button>
+        <button class="backup-btn" style="background:#FF9800; color:white;" onclick="importData()">복구</button>
     </div>
 </div>
 
 <div class="main-wrapper">
     <div class="map-container">
         <div class="area-bar">&lt;매장&gt;</div>
-        <div class="counter-box">카운터</div>
         <div id="Y1" class="box yellow pos-y1" onclick="openPop('Y1', 2)">Y1</div>
         <div id="Y2" class="box yellow pos-y2" onclick="openPop('Y2', 2)">Y2</div>
         <div id="Y3" class="box yellow island-y pos-y3" onclick="openPop('Y3', 4)">Y3</div>
@@ -106,8 +116,6 @@
         <div id="Y9" class="box yellow pos-y9" onclick="openPop('Y9', 2)">Y9</div>
         <div id="Br1" class="box brown island-br pos-br1" onclick="openPop('Br1', 4)">Br1</div>
         <div id="Br2" class="box brown island-br pos-br2" onclick="openPop('Br2', 4)">Br2</div>
-        <div id="Br3" class="box brown pos-br3" onclick="openPop('Br3', 2)">Br3</div>
-        <div id="Br4" class="box brown pos-br4" onclick="openPop('Br4', 2)">Br4</div>
         <div id="B1" class="box blue pos-b1" onclick="openPop('B1', 1)">B1</div>
         <div id="B2" class="box blue pos-b2" onclick="openPop('B2', 1)">B2</div>
         <div id="B3" class="box blue pos-b3" onclick="openPop('B3', 1)">B3</div>
@@ -119,25 +127,13 @@
         <div id="B9" class="box blue pos-b9" onclick="openPop('B9', 1)">B9</div>
         <div id="B10" class="box blue pos-b10" onclick="openPop('B10', 1)">B10</div>
     </div>
-    <div class="map-container">
-        <div class="area-bar">&lt;매장 창고&gt;</div>
-        <div id="S1" class="box yellow pos-s1" onclick="openPop('S1', 8)">S1</div>
-        <div id="S2" class="box yellow pos-s2" onclick="openPop('S2', 8)">S2</div>
-        <div id="S3" class="box yellow pos-s3" onclick="openPop('S3', 8)">S3</div>
-        <div id="S4" class="box yellow pos-s4" onclick="openPop('S4', 8)">S4</div>
-        <div id="S5" class="box yellow pos-s5" onclick="openPop('S5', 8)">S5</div>
-        <div id="S6" class="box yellow pos-s6" onclick="openPop('S6', 8)">S6</div>
-        <div id="S7" class="box yellow pos-s7" onclick="openPop('S7', 8)">S7</div>
-        <div id="S8" class="box yellow pos-s8" onclick="openPop('S8', 8)">S8</div>
-        <div id="S9" class="box yellow pos-s9" onclick="openPop('S9', 8)">S9</div>
-    </div>
 </div>
 
 <div id="overlay">
     <div class="pop-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 id="popTitle" style="margin:0; font-size:18px;"></h3>
-            <button onclick="closePopOnly()" style="background:none; border:none; font-size:28px;">×</button>
+            <h3 id="popTitle" style="margin:0;"></h3>
+            <button onclick="closePopOnly()" style="border:none; background:none; font-size:28px;">×</button>
         </div>
         <div id="popLayers" class="layer-stack"></div>
         <div id="popFooter" style="padding-top:10px;"></div>
@@ -145,99 +141,120 @@
 </div>
 
 <script>
-    let isEdit = false; let storage = {}; let currId = '';
-    
-    function loadData() {
-        const localData = localStorage.getItem('xexymix_map_data');
-        if (localData) storage = JSON.parse(localData);
-    }
-    window.onload = loadData;
+    let isEdit = false; 
+    let storage = JSON.parse(localStorage.getItem('xexymix_map_data')) || {};
+    let masterList = JSON.parse(localStorage.getItem('xexymix_master_list')) || [];
+    let selectedProduct = null;
+    let currId = '';
 
-    function toggleEdit() {
-        isEdit = !isEdit;
-        const editBtn = document.getElementById('editBtn');
-        const backupToggleBtn = document.getElementById('backupToggleBtn');
-        const backupSection = document.getElementById('backupSection');
-        const searchInput = document.getElementById('searchInput');
+    function toggleDrawer() { document.getElementById('productDrawer').classList.toggle('open'); renderMasterList(); }
 
-        editBtn.classList.toggle('active', isEdit);
-        
-        if(isEdit) {
-            // 수정모드 ON: 검색창 줄어들고 버튼 나타남
-            backupToggleBtn.classList.add('show');
-        } else {
-            // 수정모드 OFF: 원상복구
-            backupToggleBtn.classList.remove('show');
-            backupSection.classList.remove('open');
+    function addProduct(e) {
+        if(e.key === 'Enter' && e.target.value.trim()) {
+            masterList.push(e.target.value.trim());
+            e.target.value = '';
+            saveMaster();
+            renderMasterList();
         }
     }
 
-    function toggleBackupSection() {
-        const section = document.getElementById('backupSection');
-        section.classList.toggle('open');
+    function saveMaster() { localStorage.setItem('xexymix_master_list', JSON.stringify(masterList)); }
+
+    function renderMasterList() {
+        const list = document.getElementById('productList');
+        list.innerHTML = masterList.map((p, i) => `
+            <div class="product-item ${selectedProduct === p ? 'selected' : ''}" onclick="selectProduct('${p}')">
+                <span>${p}</span>
+                <button onclick="deleteProduct(event, ${i})" style="border:none; background:none; color:red;">삭제</button>
+            </div>
+        `).join('');
     }
 
-    function exportData() {
-        const dataStr = JSON.stringify(storage);
-        const area = document.getElementById('backupArea');
-        area.value = dataStr;
-        area.select();
-        document.execCommand('copy');
-        alert("데이터가 복사되었습니다!");
+    function selectProduct(p) {
+        selectedProduct = (selectedProduct === p) ? null : p;
+        const bar = document.getElementById('placementBar');
+        if(selectedProduct) {
+            bar.style.display = 'block';
+            document.getElementById('selectedPName').innerText = p;
+            if(!isEdit) toggleEdit(); // 배치를 위해 수정모드 강제 활성화
+        } else {
+            bar.style.display = 'none';
+        }
+        renderMasterList();
     }
 
-    function importData() {
-        const area = document.getElementById('backupArea');
-        if(!area.value.trim()) { alert("데이터를 붙여넣어주세요."); return; }
-        try {
-            const imported = JSON.parse(area.value);
-            if(confirm("데이터를 복구할까요?")) {
-                storage = imported;
-                localStorage.setItem('xexymix_map_data', JSON.stringify(storage));
-                location.reload();
-            }
-        } catch(e) { alert("잘못된 데이터입니다."); }
+    function deleteProduct(e, i) {
+        e.stopPropagation();
+        masterList.splice(i, 1);
+        saveMaster(); renderMasterList();
     }
 
     function openPop(id, layers) {
         currId = id;
         const container = document.getElementById('popLayers');
         container.innerHTML = '';
-        document.getElementById('popTitle').innerText = id + " 정보";
+        document.getElementById('popTitle').innerText = id;
         const saved = storage[id] || [];
         for(let i=1; i<=layers; i++) {
             container.innerHTML += `
-                <div class="layer-item">
-                    <div class="layer-label">${i}F</div>
-                    <textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} 
-                        style="background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea>
+                <div class="layer-item" onclick="placeAtLayer(${i-1})">
+                    <div style="width:30px; font-weight:bold;">${i}F</div>
+                    <textarea class="layer-textarea" id="layer_input_${i-1}" ${!isEdit?'readonly':''}>${saved[i-1]||''}</textarea>
                 </div>`;
         }
         document.getElementById('popFooter').innerHTML = isEdit ? 
-            `<button onclick="saveToLocal()" style="width:100%; padding:16px; background:#4CAF50; color:white; border:none; border-radius:12px; font-weight:bold;">저장하기</button>` : 
-            `<button onclick="closePopOnly()" style="width:100%; padding:16px; background:#333; color:white; border:none; border-radius:12px;">닫기</button>`;
+            `<button onclick="saveToLocal()" style="width:100%; padding:15px; background:#4CAF50; color:white; border:none; border-radius:10px;">저장하기</button>` : '';
         document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function placeAtLayer(idx) {
+        if(!selectedProduct || !isEdit) return;
+        const input = document.getElementById(`layer_input_${idx}`);
+        let currentVal = input.value.trim();
+        // 이미 있으면 콤마로 구분해서 추가, 없으면 그냥 추가
+        input.value = currentVal ? currentVal + ", " + selectedProduct : selectedProduct;
+        saveToLocal();
     }
 
     function saveToLocal() {
         const inputs = document.querySelectorAll('.layer-textarea');
         const arr = [];
-        inputs.forEach(ipt => { arr[ipt.dataset.idx] = ipt.value; });
+        inputs.forEach((ipt, i) => { arr[i] = ipt.value; });
         storage[currId] = arr;
         localStorage.setItem('xexymix_map_data', JSON.stringify(storage));
-        document.getElementById('overlay').style.display = 'none';
+        if(!selectedProduct) document.getElementById('overlay').style.display = 'none';
     }
 
+    // --- 기본 유틸리티 함수들 ---
+    function toggleEdit() {
+        isEdit = !isEdit;
+        document.getElementById('editBtn').classList.toggle('active', isEdit);
+        document.getElementById('backupToggleBtn').classList.toggle('show', isEdit);
+    }
+    function toggleBackupSection() { document.getElementById('backupSection').classList.toggle('open'); }
     function closePopOnly() { document.getElementById('overlay').style.display = 'none'; }
-
+    function exportData() {
+        const combined = { storage, masterList };
+        document.getElementById('backupArea').value = JSON.stringify(combined);
+        alert("모든 데이터(리스트 포함)가 복사되었습니다.");
+    }
+    function importData() {
+        try {
+            const imported = JSON.parse(document.getElementById('backupArea').value);
+            storage = imported.storage;
+            masterList = imported.masterList;
+            localStorage.setItem('xexymix_map_data', JSON.stringify(storage));
+            localStorage.setItem('xexymix_master_list', JSON.stringify(masterList));
+            location.reload();
+        } catch(e) { alert("잘못된 데이터입니다."); }
+    }
     function searchGlobal(q) {
         document.querySelectorAll('.box').forEach(b => b.classList.remove('blink'));
         if(!q.trim()) return;
         q = q.toLowerCase();
         for(let id in storage) {
-            if(id.toLowerCase() === q || (storage[id] && storage[id].some(v => v && v.toLowerCase().includes(q)))) {
-                const el = document.getElementById(id);
-                if(el) el.classList.add('blink');
+            if(storage[id] && storage[id].some(v => v && v.toLowerCase().includes(q))) {
+                document.getElementById(id).classList.add('blink');
             }
         }
     }
