@@ -14,12 +14,35 @@
         /* 헤더 스타일 */
         .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 200; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
-        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
-        .icon-btn.active { background: #ff4d4d; color: white; transform: scale(1.1); }
+        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .icon-btn.active { background: #ff4d4d; color: white; }
 
-        /* 백업 섹션 */
-        .backup-section { width: 360px; background: #444; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; color: white; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .backup-btn-group { display: flex; gap: 10px; }
+        /* 백업 아이콘 초기 상태 (숨김) */
+        #backupToggleBtn { display: none; background: #e3f2fd; color: #2196F3; }
+        #backupToggleBtn.show { display: flex; }
+
+        /* 백업 섹션 (기본 숨김) */
+        .backup-section { 
+            width: 360px; 
+            background: #444; 
+            padding: 0; 
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px; 
+            margin-bottom: 0; 
+            box-sizing: border-box; 
+            color: white; 
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+        .backup-section.open { 
+            padding: 15px; 
+            height: auto; 
+            margin-bottom: 15px; 
+            opacity: 1;
+        }
+        
+        .backup-btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .backup-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
         #backupArea { width: 100%; height: 60px; border-radius: 6px; font-size: 10px; padding: 8px; box-sizing: border-box; resize: none; border: 1px solid #666; background: #222; color: #eee; }
 
@@ -33,7 +56,7 @@
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* 아일랜드 정렬 (수정된 중앙 대각선 배치) */
+        /* 아일랜드 정렬 */
         .island-y { transform: rotate(-45deg); width: 68px; height: 68px; } 
         .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
         .pos-y3 { top: 160px; left: 135px; } 
@@ -41,7 +64,7 @@
         .pos-br1 { top: 208px; left: 111px; } 
         .pos-br2 { top: 240px; left: 143px; } 
 
-        /* 기타 좌표 */
+        /* 집기 좌표 */
         .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } 
         .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
         .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } 
@@ -74,15 +97,12 @@
         .pos-s8 { top: 240px; left: 75px; width: 55px; height: 90px; } 
         .pos-s9 { top: 305px; left: 135px; width: 85px; height: 45px; }
 
-        /* 팝업 UI (수정됨) */
+        /* 팝업 UI */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:flex-end; }
         .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
         .layer-stack { display: flex; flex-direction: column-reverse; gap: 8px; overflow-y: auto; padding: 10px 0; }
         .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; }
-        
-        /* [수정] 빨간 선 제거 및 심플한 층수 라벨 */
         .layer-label { width: 35px; font-size: 13px; font-weight: bold; color: #666; text-align: center; }
-        
         .layer-textarea { flex: 1; height: 45px; border: 1px solid #ddd; border-radius: 6px; padding: 8px; font-size: 14px; resize: none; box-sizing: border-box; }
     </style>
 </head>
@@ -90,10 +110,11 @@
 
 <div class="global-header">
     <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="searchGlobal(this.value)">
+    <button id="backupToggleBtn" class="icon-btn" onclick="toggleBackupSection()">💾</button>
     <button id="editBtn" class="icon-btn" onclick="toggleEdit()">✏️</button>
 </div>
 
-<div class="backup-section">
+<div id="backupSection" class="backup-section">
     <div style="font-size: 14px; font-weight: bold; color: #ffdb6d;">📊 데이터 백업/복구</div>
     <textarea id="backupArea" placeholder="여기에 백업 데이터를 붙여넣거나, 추출 버튼을 누르세요."></textarea>
     <div class="backup-btn-group">
@@ -167,7 +188,24 @@
 
     function toggleEdit() {
         isEdit = !isEdit;
-        document.getElementById('editBtn').classList.toggle('active', isEdit);
+        const editBtn = document.getElementById('editBtn');
+        const backupToggleBtn = document.getElementById('backupToggleBtn');
+        const backupSection = document.getElementById('backupSection');
+
+        editBtn.classList.toggle('active', isEdit);
+        
+        // 편집모드일 때만 백업 아이콘 보이기
+        if(isEdit) {
+            backupToggleBtn.classList.add('show');
+        } else {
+            backupToggleBtn.classList.remove('show');
+            backupSection.classList.remove('open'); // 편집 종료시 백업창도 닫기
+        }
+    }
+
+    function toggleBackupSection() {
+        const section = document.getElementById('backupSection');
+        section.classList.toggle('open');
     }
 
     function exportData() {
