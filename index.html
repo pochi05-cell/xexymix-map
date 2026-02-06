@@ -3,41 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고지도 - 아일랜드 입체배치</title>
+    <title>젝시믹스 재고지도 - 최종 입체 복구</title>
     <style>
         :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; --highlight: #ff4d4d; }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; }
         
-        /* UI 및 헤더 */
         .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 1000; box-sizing: border-box; }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
         .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .btn.active { background: var(--highlight); color: white; }
         #backupBtn { display: none; background: #444; color: white; }
 
-        /* 수정 모드 배경 효과 */
         .edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500; display: none; pointer-events: none; }
         body.edit-mode .edit-overlay { display: block; }
 
-        /* 지도 및 박스 */
         .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; }
-        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; }
+        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; transition: 0.1s; }
         .counter { position: absolute; top: 535px; left: 82px; width: 200px; height: 38px; background: #eee; border: 1px solid #ccc; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #888; border-radius: 5px; font-weight: bold; }
 
-        .yellow { background-color: var(--yellow) !important; }
-        .brown { background-color: var(--brown) !important; }
         .blue { background-color: var(--blue) !important; }
+        .brown { background-color: var(--brown) !important; }
+        .yellow { background-color: var(--yellow) !important; }
         
-        /* 아일랜드 입체 회전 설정 */
-        .island-rot { transform: rotate(-45deg); width: 68px; height: 68px; z-index: 10; }
-        .island-main { transform: rotate(-45deg); width: 75px !important; height: 75px !important; z-index: 20 !important; font-size: 12px !important; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
-        .island-br { transform: rotate(-45deg); width: 45px; height: 45px; z-index: 30; }
+        /* [아일랜드 박스별 개별 설정] */
+        .island { transform: rotate(-45deg); width: 65px; height: 65px; }
+        #Y3 { z-index: 10; }      /* 가장 아래 */
+        #Y4 { z-index: 10; }      /* 가장 아래 */
+        #Y3-4 { width: 75px; height: 75px; z-index: 100; font-size: 14px; box-shadow: 0 0 15px rgba(0,0,0,0.3); } /* 가장 위 & 큼 */
+        .island-br { transform: rotate(-45deg); width: 48px; height: 48px; z-index: 110; } /* 갈색은 청회색 박스 옆에 위치 */
 
-        .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; z-index: 1100 !important; }
+        .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; z-index: 1000 !important; }
         @keyframes blink { 50% { opacity: 0.3; } }
 
-        /* 팝업 모달 */
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:3000; align-items:flex-end; justify-content:center; }
         .pop-content { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 20px; box-sizing: border-box; }
         .layer-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; cursor: pointer; }
@@ -55,25 +53,31 @@
     <button id="editBtn" class="btn" onclick="toggleEdit()">✏️</button>
 </div>
 
+<div id="placementBar" style="display:none; background:var(--accent); color:white; width:360px; padding:10px; text-align:center; font-size:13px; font-weight:bold; box-sizing:border-box; border-radius: 8px; margin-top: 5px; z-index:1000; position:relative;">📍 [<span id="selName"></span>] 배치 중 - 층을 클릭하세요</div>
+
 <div class="main-wrapper">
-    <div class="map-container" id="shopMap"><div class="area-label">&lt;매장&gt;</div><div class="counter">카운터</div></div>
+    <div class="map-container" id="shopMap">
+        <div class="area-label">&lt;매장&gt;</div>
+        <div class="counter">카운터</div>
+        </div>
     <div class="map-container" id="stockMap" style="height: 400px;"><div class="area-label">&lt;창고&gt;</div></div>
 </div>
 
 <div id="overlay" class="modal"><div class="pop-content"><h3 id="popTitle"></h3><div id="popLayers"></div><button onclick="save()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold;">저장</button></div></div>
 
 <script>
+    // 박스 데이터 정의 (좌표를 완전히 분리)
     const shopBoxes = [
         {id:'Y1', c:'yellow', t:70, l:60, w:90, h:35, f:2}, {id:'Y2', c:'yellow', t:70, r:30, w:90, h:35, f:2},
         
-        // [수정된 아일랜드 배치: Y3-4를 중심으로 입체적 배치]
-        {id:'Y3', c:'blue island-rot', t:155, l:130, f:1},       // 살짝 뒤쪽/위쪽
-        {id:'Y4', c:'blue island-rot', t:215, l:190, f:1},       // 살짝 뒤쪽/아래쪽
-        {id:'Y3-4', c:'blue island-main', t:182, l:157, f:1},   // 가장 위쪽 & 크게
-
-        {id:'Br1', c:'brown island-br', t:208, l:111, f:4}, 
-        {id:'Br2', c:'brown island-br', t:240, l:143, f:4},
+        // [아일랜드 배치 핵심 수정]
+        {id:'Y3', c:'blue island', t:145, l:120, f:1},     // 왼쪽 위로 더 밀어냄
+        {id:'Y4', c:'blue island', t:225, l:200, f:1},     // 오른쪽 아래로 더 밀어냄
+        {id:'Y3-4', c:'blue island', t:185, l:160, f:1},   // 중앙 고수 (z-index가 높아 위로 올라옴)
         
+        {id:'Br1', c:'brown island-br', t:205, l:105, f:4}, 
+        {id:'Br2', c:'brown island-br', t:235, l:135, f:4},
+
         {id:'B1', c:'blue', t:130, l:20, w:35, h:55, f:1}, {id:'B2', c:'blue', t:195, l:20, w:35, h:55, f:1},
         {id:'B3', c:'blue', t:260, l:20, w:35, h:55, f:1}, {id:'B4', c:'blue', t:325, l:20, w:35, h:55, f:1},
         {id:'B5', c:'blue', t:130, r:25, w:35, h:55, f:1}, {id:'B6', c:'blue', t:195, r:25, w:35, h:55, f:1},
@@ -90,7 +94,8 @@
         {id:'S6', t:140, l:15, w:55, h:90}, {id:'S7', t:140, r:15, w:55, h:90}, {id:'S8', t:240, l:75, w:55, h:90}, {id:'S9', t:305, l:135, w:85, h:45}
     ];
 
-    let isEdit = false, storage = JSON.parse(localStorage.getItem('xexy_v8_data')) || {};
+    let isEdit = false, selProd = null, currId = null;
+    let storage = JSON.parse(localStorage.getItem('xexy_v9_data')) || {};
 
     function init() {
         createBoxes(shopBoxes, 'shopMap', false);
@@ -129,11 +134,18 @@
         document.getElementById('overlay').style.display = 'flex';
     }
 
+    function clickLayer(idx) {
+        if(!selProd || !isEdit) return;
+        const ipt = document.getElementById(`ipt_${idx}`);
+        if(!ipt.value.includes(selProd)) ipt.value = ipt.value ? ipt.value + ", " + selProd + " ()" : selProd + " ()";
+        save();
+    }
+
     function save() {
         const ipts = document.querySelectorAll('#popLayers textarea');
         storage[currId] = Array.from(ipts).map(i => i.value);
-        localStorage.setItem('xexy_v8_data', JSON.stringify(storage));
-        document.getElementById('overlay').style.display = 'none';
+        localStorage.setItem('xexy_v9_data', JSON.stringify(storage));
+        if(!selProd) document.getElementById('overlay').style.display = 'none';
     }
 
     function search(q) {
@@ -145,7 +157,6 @@
             }
         }
     }
-
     init();
 </script>
 </body>
