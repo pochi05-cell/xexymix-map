@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>젝시믹스 재고지도</title>
+    <title>젝시믹스 재고지도 (백업기능 포함)</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/850/850810.png">
@@ -13,10 +13,17 @@
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: env(safe-area-inset-top) 0 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; }
         
         body.edit-mode-active { background: #1a1a1a; }
-        .global-header { width: 360px; background: white; display: flex; gap: 10px; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 200; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
+        .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 200; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
-        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; }
+        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         .icon-btn.active { background: #ff4d4d; color: white; transform: scale(1.1); }
+
+        /* 백업/복구 섹션 스타일 */
+        .backup-section { width: 360px; display: none; background: #444; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-sizing: border-box; color: white; }
+        body.edit-mode-active .backup-section { display: block; }
+        .backup-btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .backup-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        #backupArea { width: 100%; height: 60px; margin-top: 10px; border-radius: 6px; font-size: 10px; padding: 5px; box-sizing: border-box; resize: none; border: 1px solid #666; background: #222; color: #aaa; }
 
         .main-wrapper { display: flex; flex-direction: column; gap: 15px; align-items: center; }
         .map-container { background: white; width: 360px; height: 750px; position: relative; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden; flex-shrink: 0; }
@@ -27,7 +34,15 @@
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* --- 매장 집기 좌표 --- */
+        /* --- 아일랜드 중앙 정렬 좌표 --- */
+        .island-y { transform: rotate(-45deg); width: 68px; height: 68px; } 
+        .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
+        .pos-y3 { top: 160px; left: 135px; } 
+        .pos-y4 { top: 208px; left: 183px; } 
+        .pos-br1 { top: 208px; left: 111px; } 
+        .pos-br2 { top: 240px; left: 143px; } 
+
+        /* --- 기타 집기 좌표 --- */
         .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } 
         .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
         .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } 
@@ -38,16 +53,6 @@
         .pos-b6 { top: 195px; right: 25px; width: 35px; height: 55px; }
         .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } 
         .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
-
-        /* --- 아일랜드 중앙 4분할 (이미지 형태) --- */
-        .island-y { transform: rotate(-45deg); width: 68px; height: 68px; } 
-        .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
-
-        .pos-y3 { top: 160px; left: 135px; } 
-        .pos-y4 { top: 208px; left: 183px; } 
-        .pos-br1 { top: 208px; left: 111px; } 
-        .pos-br2 { top: 240px; left: 143px; } 
-
         .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } 
         .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
         .pos-y6 { top: 450px; left: 220px; width: 38px; height: 70px; } 
@@ -59,7 +64,7 @@
         .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } 
         .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
 
-        /* --- 매장 창고 좌표 --- */
+        /* --- 창고 좌표 --- */
         .pos-s1 { top: 70px; left: 10px; width: 62px; height: 40px; } 
         .pos-s2 { top: 70px; left: 78px; width: 62px; height: 40px; } 
         .pos-s3 { top: 70px; left: 146px; width: 62px; height: 40px; } 
@@ -84,6 +89,15 @@
 <div class="global-header">
     <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="searchGlobal(this.value)">
     <button id="editBtn" class="icon-btn" onclick="toggleEdit()">✏️</button>
+</div>
+
+<div class="backup-section">
+    <div style="font-size: 14px; font-weight: bold;">📊 데이터 백업/복구</div>
+    <textarea id="backupArea" placeholder="여기에 백업된 코드를 붙여넣고 복구를 누르세요."></textarea>
+    <div class="backup-btn-group">
+        <button class="backup-btn" style="background:#2196F3; color:white;" onclick="exportData()">데이터 추출</button>
+        <button class="backup-btn" style="background:#FF9800; color:white;" onclick="importData()">데이터 복구</button>
+    </div>
 </div>
 
 <div class="main-wrapper">
@@ -127,13 +141,6 @@
         <div id="S8" class="box yellow pos-s8" onclick="openPop('S8', 8)">S8</div>
         <div id="S9" class="box yellow pos-s9" onclick="openPop('S9', 8)">S9</div>
     </div>
-
-    <div class="map-container">
-        <div class="area-bar">&lt;지하 창고&gt;</div>
-        <div style="height: 100%; display: flex; justify-content: center; align-items: center; color: #999;">
-            <p style="font-size: 14px; font-weight: bold;">업데이트 예정</p>
-        </div>
-    </div>
 </div>
 
 <div id="overlay">
@@ -162,18 +169,44 @@
         document.body.classList.toggle('edit-mode-active', isEdit);
     }
 
+    // 데이터 백업 (추출)
+    function exportData() {
+        const dataStr = JSON.stringify(storage);
+        const area = document.getElementById('backupArea');
+        area.value = dataStr;
+        area.select();
+        document.execCommand('copy');
+        alert("모든 데이터가 텍스트로 복사되었습니다! 메모장에 붙여넣어 백업하세요.");
+    }
+
+    // 데이터 복구 (가져오기)
+    function importData() {
+        const area = document.getElementById('backupArea');
+        if(!area.value.trim()) { alert("복구할 텍스트를 입력창에 붙여넣어주세요."); return; }
+        try {
+            const imported = JSON.parse(area.value);
+            if(confirm("기존 데이터가 삭제되고 백업된 데이터로 덮어씌워집니다. 진행할까요?")) {
+                storage = imported;
+                localStorage.setItem('xexymix_map_data', JSON.stringify(storage));
+                alert("복구가 완료되었습니다!");
+                location.reload();
+            }
+        } catch(e) {
+            alert("잘못된 데이터 형식입니다. 복사한 텍스트를 정확히 입력해주세요.");
+        }
+    }
+
     function openPop(id, layers) {
         currId = id;
         const container = document.getElementById('popLayers');
         container.innerHTML = '';
-        document.getElementById('popTitle').innerText = id + " 위치 정보";
+        document.getElementById('popTitle').innerText = id + " 정보";
         const saved = storage[id] || [];
         for(let i=1; i<=layers; i++) {
             container.innerHTML += `
                 <div class="layer-item">
                     <div class="layer-label">${i}층</div>
                     <textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} 
-                        placeholder="${isEdit?'내용 입력':''}"
                         style="background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea>
                 </div>`;
         }
