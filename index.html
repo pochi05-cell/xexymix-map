@@ -2,259 +2,166 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>젝시믹스 재고지도 - 최종 완결판</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>젝시믹스 스마트 재고지도</title>
     <style>
-        :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; --accent: #4CAF50; }
-        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-
-        /* 헤더 스타일 */
-        .global-header { width: 360px; background: white; display: flex; align-items: center; padding: 10px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
-        .list-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 22px; background: #f0f0f0; border: none; border-radius: 8px; cursor: pointer; margin-right: 8px; flex-shrink: 0; }
-        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
-        .right-icons { display: flex; gap: 6px; margin-left: 8px; flex-shrink: 0; }
-        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; }
-        .icon-btn.active { background: #ff4d4d !important; color: white !important; }
-
-        /* 배치 안내바 */
-        #placementBar { display: none; width: 360px; background: var(--accent); color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; font-size: 13px; font-weight: bold; box-sizing: border-box; }
-
-        /* 품번 서랍 */
-        #productDrawer { position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: #fff; z-index: 2000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
-        #productDrawer.open { left: 0; }
-        .drawer-header { padding: 20px; background: #f8f8f8; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; }
+        :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; }
+        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; color: #333; }
+        
+        /* 헤더 & UI */
+        .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 1000; box-sizing: border-box; }
+        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn.active { background: #ff4d4d; color: white; }
+        
+        /* 서랍장 */
+        #drawer { position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: #fff; z-index: 2000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+        #drawer.open { left: 0; }
         .drawer-content { flex: 1; overflow-y: auto; padding: 15px; }
-        .product-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .product-item.selected { background: #e8f5e9; border: 2px solid var(--accent); border-radius: 6px; }
+        .prod-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; cursor: pointer; }
+        .prod-item.selected { background: #e8f5e9; border: 2px solid var(--accent); border-radius: 6px; }
 
         /* 지도 레이아웃 */
-        .main-wrapper { display: flex; flex-direction: column; gap: 20px; align-items: center; padding-bottom: 50px; }
-        .map-container { background: white; width: 360px; height: 750px; position: relative; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden; }
-        .area-bar { background: #f8f8f8; height: 45px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-bottom: 1px solid #eee; }
-        .box { position: absolute; border: 1.5px solid #333; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; transition: 0.2s; }
-        .yellow { background: var(--yellow); } .brown { background: var(--brown); } .blue { background: var(--blue); }
-        .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 500 !important; }
-        @keyframes blinker { 50% { opacity: 0.3; } }
+        .map-container { background: white; width: 360px; height: 720px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .area-label { background: #f8f8f8; padding: 10px; text-align: center; font-weight: bold; border-bottom: 1px solid #eee; }
+        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .blink { animation: blink 0.6s infinite; background: #ff4d4d !important; color: white !important; z-index: 100; }
+        @keyframes blink { 50% { opacity: 0.3; } }
 
-        /* [좌표 설정] */
-        /* 아일랜드 그룹 */
-        .island-y { transform: rotate(-45deg); width: 68px; height: 68px; } 
-        .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
-        .pos-y3 { top: 160px; left: 135px; } .pos-y4 { top: 208px; left: 183px; } 
-        .pos-br1 { top: 208px; left: 111px; } .pos-br2 { top: 240px; left: 143px; } 
-
-        /* 매장 외곽 노란색 */
-        .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } 
-        .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
-        .pos-y5 { top: 450px; right: 25px; width: 38px; height: 70px; } 
-        .pos-y6 { top: 450px; left: 220px; width: 38px; height: 70px; }
-        .pos-y7 { top: 585px; right: 30px; width: 38px; height: 75px; } 
-        .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } 
-        .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
-        
-        /* 매장 갈색 및 블루 */
-        .pos-br3 { top: 585px; left: 65px; width: 32px; height: 50px; } 
-        .pos-br4 { top: 645px; left: 65px; width: 32px; height: 50px; }
-        .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } 
-        .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
-        .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } 
-        .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
-        .pos-b5 { top: 130px; right: 25px; width: 35px; height: 55px; } 
-        .pos-b6 { top: 195px; right: 25px; width: 35px; height: 55px; }
-        .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } 
-        .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
-        .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } 
-        .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
-
-        /* 카운터 */
-        .counter-box { position: absolute; top: 535px; left: 82px; width: 200px; height: 38px; background: #eee; border: 1px solid #ccc; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #888; border-radius: 5px; }
-        
-        /* 창고 좌표 (S1~S9) */
-        .pos-s1 { top: 70px; left: 10px; width: 62px; height: 40px; } 
-        .pos-s2 { top: 70px; left: 78px; width: 62px; height: 40px; } 
-        .pos-s3 { top: 70px; left: 146px; width: 62px; height: 40px; } 
-        .pos-s4 { top: 70px; left: 214px; width: 62px; height: 40px; } 
-        .pos-s5 { top: 70px; left: 282px; width: 62px; height: 40px; } 
-        .pos-s6 { top: 140px; left: 15px; width: 55px; height: 90px; } 
-        .pos-s7 { top: 140px; right: 15px; width: 55px; height: 90px; } 
-        .pos-s8 { top: 240px; left: 75px; width: 55px; height: 90px; } 
-        .pos-s9 { top: 305px; left: 135px; width: 85px; height: 45px; }
-
-        /* 팝업 UI */
-        #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:3000; justify-content:center; align-items:flex-end; }
-        .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px 20px 40px; box-sizing:border-box; }
-        .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; display: flex; align-items: center; margin-bottom: 8px; gap: 10px; }
-        .layer-textarea { flex: 1; height: 45px; border: 1px solid #ddd; border-radius: 6px; padding: 8px; font-size: 14px; resize: none; }
+        /* 팝업 */
+        #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:3000; align-items:flex-end; justify-content:center; }
+        .pop { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 20px; box-sizing: border-box; }
+        .layer-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; background: #f9f9f9; padding: 8px; border-radius: 8px; }
+        textarea { flex: 1; height: 40px; border: 1px solid #ddd; border-radius: 5px; resize: none; }
     </style>
 </head>
 <body>
 
-<div id="productDrawer">
-    <div class="drawer-header"><span>📦 품번 마스터 리스트</span><button onclick="toggleDrawer()" style="border:none; background:none; font-size:24px;">×</button></div>
+<div id="drawer">
+    <div style="padding:20px; background:#f8f8f8; font-weight:bold; display:flex; justify-content:space-between;">
+        📦 품번 리스트 <button onclick="toggleDrawer()" style="border:none; background:none; font-size:20px;">×</button>
+    </div>
     <div class="drawer-content">
-        <input type="text" id="newProductInput" style="width:100%; padding:12px; margin-bottom:15px; box-sizing:border-box; border:1px solid #ddd; border-radius:8px;" placeholder="새 품번 입력 후 엔터" onkeypress="addProduct(event)">
-        <div id="productList"></div>
+        <input type="text" id="newProd" style="width:100%; padding:10px; box-sizing:border-box;" placeholder="새 품번 입력 후 엔터" onkeypress="addProd(event)">
+        <div id="prodList"></div>
     </div>
 </div>
 
 <div class="global-header">
-    <button class="list-btn" onclick="toggleDrawer()">📋</button>
-    <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="searchGlobal(this.value)">
-    <div class="right-icons">
-        <button id="editBtn" class="icon-btn" onclick="toggleEdit()">✏️</button>
-    </div>
+    <button class="btn" onclick="toggleDrawer()">📋</button>
+    <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="search(this.value)">
+    <button id="editBtn" class="btn" onclick="toggleEdit()">✏️</button>
 </div>
 
-<div id="placementBar">원하는 층을 클릭하여 [ <span id="selectedPName"></span> ] 배치</div>
+<div id="placementBar" style="display:none; background:var(--accent); color:white; width:360px; padding:8px; text-align:center; font-size:12px; font-weight:bold;">
+    [ <span id="selName"></span> ] 배치 중 - 집기를 클릭하세요
+</div>
 
 <div class="main-wrapper">
-    <div class="map-container">
-        <div class="area-bar">&lt;매장&gt;</div>
-        <div id="Y1" class="box yellow pos-y1" onclick="openPop('Y1', 2)">Y1</div>
-        <div id="Y2" class="box yellow pos-y2" onclick="openPop('Y2', 2)">Y2</div>
-        <div id="Y3" class="box yellow island-y pos-y3" onclick="openPop('Y3', 4)">Y3</div>
-        <div id="Y4" class="box yellow island-y pos-y4" onclick="openPop('Y4', 4)">Y4</div>
-        <div id="Br1" class="box brown island-br pos-br1" onclick="openPop('Br1', 4)">Br1</div>
-        <div id="Br2" class="box brown island-br pos-br2" onclick="openPop('Br2', 4)">Br2</div>
-        <div id="B1" class="box blue pos-b1" onclick="openPop('B1', 1)">B1</div>
-        <div id="B2" class="box blue pos-b2" onclick="openPop('B2', 1)">B2</div>
-        <div id="B3" class="box blue pos-b3" onclick="openPop('B3', 1)">B3</div>
-        <div id="B4" class="box blue pos-b4" onclick="openPop('B4', 1)">B4</div>
-        <div id="B5" class="box blue pos-b5" onclick="openPop('B5', 1)">B5</div>
-        <div id="B6" class="box blue pos-b6" onclick="openPop('B6', 1)">B6</div>
-        <div id="B7" class="box blue pos-b7" onclick="openPop('B7', 1)">B7</div>
-        <div id="B8" class="box blue pos-b8" onclick="openPop('B8', 1)">B8</div>
-        <div id="B9" class="box blue pos-b9" onclick="openPop('B9', 1)">B9</div>
-        <div id="B10" class="box blue pos-b10" onclick="openPop('B10', 1)">B10</div>
-        <div id="Y5" class="box yellow pos-y5" onclick="openPop('Y5', 4)">Y5</div>
-        <div id="Y6" class="box yellow pos-y6" onclick="openPop('Y6', 4)">Y6</div>
-        <div class="counter-box">카운터</div>
-        <div id="Br3" class="box brown pos-br3" onclick="openPop('Br3', 2)">Br3</div>
-        <div id="Br4" class="box brown pos-br4" onclick="openPop('Br4', 2)">Br4</div>
-        <div id="Y7" class="box yellow pos-y7" onclick="openPop('Y7', 4)">Y7</div>
-        <div id="Y8" class="box yellow pos-y8" onclick="openPop('Y8', 2)">Y8</div>
-        <div id="Y9" class="box yellow pos-y9" onclick="openPop('Y9', 2)">Y9</div>
-    </div>
-
-    <div class="map-container">
-        <div class="area-bar">&lt;창고&gt;</div>
-        <div id="S1" class="box blue pos-s1" onclick="openPop('S1', 8)">S1</div>
-        <div id="S2" class="box blue pos-s2" onclick="openPop('S2', 8)">S2</div>
-        <div id="S3" class="box blue pos-s3" onclick="openPop('S3', 8)">S3</div>
-        <div id="S4" class="box blue pos-s4" onclick="openPop('S4', 8)">S4</div>
-        <div id="S5" class="box blue pos-s5" onclick="openPop('S5', 8)">S5</div>
-        <div id="S6" class="box blue pos-s6" onclick="openPop('S6', 8)">S6</div>
-        <div id="S7" class="box blue pos-s7" onclick="openPop('S7', 8)">S7</div>
-        <div id="S8" class="box blue pos-s8" onclick="openPop('S8', 8)">S8</div>
-        <div id="S9" class="box blue pos-s9" onclick="openPop('S9', 8)">S9</div>
-    </div>
+    <div class="map-container" id="shopMap"><div class="area-label"><매장></div></div>
+    <div class="map-container" id="stockMap"><div class="area-label"><창고></div></div>
 </div>
 
 <div id="overlay">
-    <div class="pop-content">
-        <h3 id="popTitle" style="margin-top:0;"></h3>
-        <div id="popLayers" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
-        <button onclick="saveToLocal()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold;">저장하기</button>
-        <button onclick="closePopOnly()" style="width:100%; padding:10px; background:#eee; border:none; border-radius:10px; margin-top:8px;">닫기</button>
+    <div class="pop">
+        <h3 id="popTitle" style="margin-top:0"></h3>
+        <div id="popLayers"></div>
+        <button onclick="save()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:10px; font-weight:bold;">저장</button>
+        <button onclick="closePop()" style="width:100%; padding:10px; background:#eee; border:none; border-radius:10px; margin-top:5px;">닫기</button>
     </div>
 </div>
 
 <script>
-    let isEdit = false;
-    let storage = JSON.parse(localStorage.getItem('xexymix_map_data')) || {};
-    let masterList = JSON.parse(localStorage.getItem('xexymix_master_list')) || [];
-    let selectedProduct = null;
-    let currId = '';
+    // [좌표 데이터 요약]
+    const shopBoxes = [
+        {id:'Y1', c:'yellow', t:70, l:60, w:90, h:35, f:2}, {id:'Y2', c:'yellow', t:70, r:30, w:90, h:35, f:2},
+        {id:'Y3', c:'yellow island-y', t:160, l:135, f:4}, {id:'Y4', c:'yellow island-y', t:208, l:183, f:4},
+        {id:'Br1', c:'brown island-br', t:208, l:111, f:4}, {id:'Br2', c:'brown island-br', t:240, l:143, f:4},
+        {id:'B1', c:'blue', t:130, l:20, w:35, h:55, f:1}, {id:'B2', c:'blue', t:195, l:20, w:35, h:55, f:1},
+        {id:'B3', c:'blue', t:260, l:20, w:35, h:55, f:1}, {id:'B4', c:'blue', t:325, l:20, w:35, h:55, f:1},
+        {id:'B5', c:'blue', t:130, r:25, w:35, h:55, f:1}, {id:'B6', c:'blue', t:195, r:25, w:35, h:55, f:1},
+        {id:'B7', c:'blue', t:260, r:25, w:35, h:55, f:1}, {id:'B8', c:'blue', t:325, r:25, w:35, h:55, f:1},
+        {id:'B9', c:'blue', t:395, l:85, w:70, h:38, f:1}, {id:'B10', c:'blue', t:395, r:85, w:70, h:38, f:1},
+        {id:'Y5', c:'yellow', t:450, r:25, w:38, h:70, f:4}, {id:'Y6', c:'yellow', t:450, l:220, w:38, h:70, f:4},
+        {id:'Br3', c:'brown', t:585, l:65, w:32, h:50, f:2}, {id:'Br4', c:'brown', t:645, l:65, w:32, h:50, f:2},
+        {id:'Y7', c:'yellow', t:585, r:30, w:38, h:75, f:4}, {id:'Y8', c:'yellow', t:650, l:145, w:80, h:45, f:2},
+        {id:'Y9', c:'yellow', t:650, l:235, w:80, h:45, f:2}
+    ];
+    const stockBoxes = [
+        {id:'S1', t:70, l:10}, {id:'S2', t:70, l:78}, {id:'S3', t:70, l:146}, {id:'S4', t:70, l:214}, {id:'S5', t:70, l:282},
+        {id:'S6', t:140, l:15, w:55, h:90}, {id:'S7', t:140, r:15, w:55, h:90}, {id:'S8', t:240, l:75, w:55, h:90}, {id:'S9', t:305, l:135, w:85, h:45}
+    ];
 
-    function toggleDrawer() { document.getElementById('productDrawer').classList.toggle('open'); renderMasterList(); }
-    
-    function addProduct(e) {
-        if(e.key === 'Enter' && e.target.value.trim()) {
-            masterList.unshift(e.target.value.trim());
-            e.target.value = '';
-            localStorage.setItem('xexymix_master_list', JSON.stringify(masterList));
-            renderMasterList();
-        }
+    let isEdit = false, selProd = null, currId = null;
+    let storage = JSON.parse(localStorage.getItem('xexy_data')) || {};
+    let mList = JSON.parse(localStorage.getItem('xexy_list')) || [];
+
+    // 박스 생성 자동화
+    function createBoxes(data, targetId, isStock) {
+        const target = document.getElementById(targetId);
+        data.forEach(b => {
+            const div = document.createElement('div');
+            div.id = b.id;
+            div.className = `box ${isStock ? 'blue' : b.c}`;
+            div.innerText = b.id;
+            div.style.cssText = `top:${b.t}px; ${b.l?'left:'+b.l+'px':'right:'+b.r+'px'}; width:${b.w||60}px; height:${b.h||40}px;`;
+            div.onclick = () => openPop(b.id, b.f || 8);
+            target.appendChild(div);
+        });
     }
 
-    function renderMasterList() {
-        const list = document.getElementById('productList');
-        list.innerHTML = masterList.map((p, i) => `
-            <div class="product-item ${selectedProduct === p ? 'selected' : ''}" onclick="selectProduct('${p}')">
-                <span style="font-weight:500;">${p}</span>
-                <button onclick="deleteProduct(event, ${i})" style="color:red; border:none; background:none; font-size:12px;">삭제</button>
-            </div>
-        `).join('');
-    }
+    createBoxes(shopBoxes, 'shopMap', false);
+    createBoxes(stockBoxes, 'stockMap', true);
 
-    function selectProduct(p) {
-        selectedProduct = (selectedProduct === p) ? null : p;
-        const bar = document.getElementById('placementBar');
-        if(selectedProduct) {
-            bar.style.display = 'block';
-            document.getElementById('selectedPName').innerText = p;
-            if(!isEdit) toggleEdit();
-            document.getElementById('productDrawer').classList.remove('open');
-        } else {
-            bar.style.display = 'none';
-        }
-        renderMasterList();
+    // 기능 함수들
+    function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); renderList(); }
+    function addProd(e) { if(e.key==='Enter' && e.target.value.trim()){ mList.unshift(e.target.value.trim()); e.target.value=''; saveList(); renderList(); }}
+    function renderList() {
+        document.getElementById('prodList').innerHTML = mList.map((p, i) => `
+            <div class="prod-item ${selProd===p?'selected':''}" onclick="selectProd('${p}')">
+                ${p} <button onclick="delProd(event, ${i})" style="border:none; color:red; background:none;">×</button>
+            </div>`).join('');
     }
-
-    function deleteProduct(e, i) {
-        e.stopPropagation();
-        masterList.splice(i, 1);
-        localStorage.setItem('xexymix_master_list', JSON.stringify(masterList));
-        renderMasterList();
+    function selectProd(p) { 
+        selProd = (selProd===p) ? null : p;
+        document.getElementById('placementBar').style.display = selProd ? 'block' : 'none';
+        document.getElementById('selName').innerText = p;
+        if(selProd) { if(!isEdit) toggleEdit(); toggleDrawer(); }
+        renderList();
     }
-
-    function openPop(id, layers) {
-        currId = id;
-        const container = document.getElementById('popLayers');
-        container.innerHTML = '';
-        document.getElementById('popTitle').innerText = id + " 층별 정보";
+    function delProd(e, i) { e.stopPropagation(); mList.splice(i,1); saveList(); renderList(); }
+    function openPop(id, f) {
+        currId = id; document.getElementById('popTitle').innerText = id;
         const saved = storage[id] || [];
-        for(let i=1; i<=layers; i++) {
-            container.innerHTML += `
-                <div class="layer-item" onclick="placeAtLayer(${i-1})">
-                    <span style="font-weight:bold; min-width:25px;">${i}F</span>
-                    <textarea class="layer-textarea" id="layer_input_${i-1}" ${!isEdit?'readonly':''}>${saved[i-1]||''}</textarea>
-                </div>`;
+        let html = '';
+        for(let i=1; i<=f; i++) {
+            html += `<div class="layer-row" onclick="clickLayer(${i-1})"><b>${i}F</b>
+                <textarea id="ipt_${i-1}" ${!isEdit?'readonly':''}>${saved[i-1]||''}</textarea></div>`;
         }
+        document.getElementById('popLayers').innerHTML = html;
         document.getElementById('overlay').style.display = 'flex';
     }
-
-    function placeAtLayer(idx) {
-        if(!selectedProduct || !isEdit) return;
-        const input = document.getElementById(`layer_input_${idx}`);
-        let val = input.value.trim();
-        if(val.includes(selectedProduct)) return;
-        input.value = val ? val + ", " + selectedProduct : selectedProduct;
-        saveToLocal();
+    function clickLayer(idx) {
+        if(!selProd || !isEdit) return;
+        const ipt = document.getElementById(`ipt_${idx}`);
+        if(!ipt.value.includes(selProd)) ipt.value = ipt.value ? ipt.value + ", " + selProd : selProd;
+        save();
     }
-
-    function saveToLocal() {
-        const inputs = document.querySelectorAll('.layer-textarea');
-        storage[currId] = Array.from(inputs).map(ipt => ipt.value);
-        localStorage.setItem('xexymix_map_data', JSON.stringify(storage));
-        if(!selectedProduct) document.getElementById('overlay').style.display = 'none';
+    function save() {
+        const ipts = document.querySelectorAll('textarea');
+        storage[currId] = Array.from(ipts).map(i => i.value);
+        localStorage.setItem('xexy_data', JSON.stringify(storage));
+        if(!selProd) closePop();
     }
-
-    function toggleEdit() {
-        isEdit = !isEdit;
-        document.getElementById('editBtn').classList.toggle('active', isEdit);
-    }
-
-    function closePopOnly() { document.getElementById('overlay').style.display = 'none'; }
-
-    function searchGlobal(q) {
+    function toggleEdit() { isEdit = !isEdit; document.getElementById('editBtn').classList.toggle('active', isEdit); }
+    function closePop() { document.getElementById('overlay').style.display = 'none'; }
+    function saveList() { localStorage.setItem('xexy_list', JSON.stringify(mList)); }
+    function search(q) {
         document.querySelectorAll('.box').forEach(b => b.classList.remove('blink'));
         if(!q.trim()) return;
-        q = q.toLowerCase();
         for(let id in storage) {
-            if(storage[id] && storage[id].some(v => v && v.toLowerCase().includes(q))) {
-                const el = document.getElementById(id);
-                if(el) el.classList.add('blink');
+            if(storage[id].some(v => v.toLowerCase().includes(q.toLowerCase()))) {
+                document.getElementById(id).classList.add('blink');
             }
         }
     }
