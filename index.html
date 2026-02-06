@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고지도 (메모형)</title>
+    <title>젝시믹스 재고지도 (색상복구+메모형)</title>
     <style>
         :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; --highlight: #ff4d4d; }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; }
         
-        /* UI 요소 */
+        /* UI 및 헤더 */
         .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 1000; box-sizing: border-box; }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
         .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -22,21 +22,26 @@
 
         #placementBar { display:none; background:var(--accent); color:white; width:360px; padding:10px; text-align:center; font-size:13px; font-weight:bold; box-sizing:border-box; border-radius: 8px; margin-top: 5px; }
 
-        /* 지도 설정 */
+        /* 지도 및 박스 색상 클래스 */
         .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; }
         .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; }
-        .yellow { background: var(--yellow); } .brown { background: var(--brown); } .blue { background: var(--blue); }
+        
+        /* [색상 복구] */
+        .yellow { background-color: var(--yellow) !important; }
+        .brown { background-color: var(--brown) !important; }
+        .blue { background-color: var(--blue) !important; }
+        
         .island-y { transform: rotate(-45deg); width: 68px; height: 68px; }
         .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
-        .blink { animation: blink 0.6s infinite; background: var(--highlight) !important; color: white !important; z-index: 100; }
+        .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; z-index: 100; }
         @keyframes blink { 50% { opacity: 0.3; } }
 
         /* 팝업 */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:3000; align-items:flex-end; justify-content:center; }
         .pop { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 20px; box-sizing: border-box; }
         .layer-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-        textarea { width: 100%; height: 50px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; }
+        textarea { width: 100%; height: 55px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -72,7 +77,7 @@
 </div>
 
 <script>
-    // [좌표 데이터]
+    // [정확한 색상 데이터 연결]
     const shopBoxes = [
         {id:'Y1', c:'yellow', t:70, l:60, w:90, h:35, f:2}, {id:'Y2', c:'yellow', t:70, r:30, w:90, h:35, f:2},
         {id:'Y3', c:'yellow island-y', t:160, l:135, f:4}, {id:'Y4', c:'yellow island-y', t:208, l:183, f:4},
@@ -93,21 +98,22 @@
     ];
 
     let isEdit = false, selProd = null, currId = null;
-    let storage = JSON.parse(localStorage.getItem('xexy_v4_data')) || {};
-    let mList = JSON.parse(localStorage.getItem('xexy_v4_list')) || [];
+    let storage = JSON.parse(localStorage.getItem('xexy_v5_data')) || {};
+    let mList = JSON.parse(localStorage.getItem('xexy_v5_list')) || [];
 
     function init() {
-        createBoxes(shopBoxes, 'shopMap');
-        createBoxes(stockBoxes, 'stockMap');
+        createBoxes(shopBoxes, 'shopMap', false);
+        createBoxes(stockBoxes, 'stockMap', true);
         renderList();
     }
 
-    function createBoxes(data, targetId) {
+    function createBoxes(data, targetId, isStock) {
         const target = document.getElementById(targetId);
         data.forEach(b => {
             const div = document.createElement('div');
             div.id = b.id;
-            div.className = `box ${b.c || 'blue'}`;
+            // 중요: 클래스 이름을 명확하게 부여
+            div.className = `box ${isStock ? 'blue' : b.c}`;
             div.innerText = b.id;
             div.style.cssText = `top:${b.t}px; ${b.l?'left:'+b.l+'px':'right:'+b.r+'px'}; width:${b.w||60}px; height:${b.h||40}px;`;
             div.onclick = () => openPop(b.id, b.f || 8);
@@ -137,13 +143,12 @@
         const saved = storage[id] || [];
         let html = '';
         for(let i=0; i<f; i++) {
-            // 데이터 형식을 "품번(메모)" 혹은 그냥 "품번"으로 파싱
             html += `<div class="layer-row">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <b style="color:var(--accent)">${i+1}F</b>
-                    ${isEdit ? `<button onclick="placeHere(${i})" style="font-size:11px; padding:2px 8px;">여기에 배치</button>` : ''}
+                    ${isEdit ? `<button onclick="placeHere(${i})" style="font-size:11px; padding:3px 8px; border-radius:4px; border:1px solid #ccc; background:#fff; cursor:pointer;">배치</button>` : ''}
                 </div>
-                <textarea id="ipt_${i}" ${!isEdit?'readonly':''} placeholder="품번 및 메모 입력 (예: XP9108 (블랙/3))">${saved[i]||''}</textarea>
+                <textarea id="ipt_${i}" ${!isEdit?'readonly':''} placeholder="품번 (메모)">${saved[i]||''}</textarea>
             </div>`;
         }
         document.getElementById('popLayers').innerHTML = html;
@@ -154,25 +159,23 @@
         if(!selProd) return;
         const ipt = document.getElementById(`ipt_${idx}`);
         let currentText = ipt.value.trim();
-        // 이미 해당 품번이 있으면 메모만 수정하도록 유도하거나 중복 방지
         if(currentText.includes(selProd)) {
-            alert("이미 배치된 품번입니다. 괄호 안의 메모만 수정해주세요.");
+            alert("이미 배치된 품번입니다.");
         } else {
             ipt.value = currentText ? currentText + ", " + selProd + " ()" : selProd + " ()";
-            // 괄호 안으로 커서 이동시키기 편하게 () 추가
         }
     }
 
     function save() {
         const ipts = document.querySelectorAll('textarea');
         storage[currId] = Array.from(ipts).map(i => i.value);
-        localStorage.setItem('xexy_v4_data', JSON.stringify(storage));
+        localStorage.setItem('xexy_v5_data', JSON.stringify(storage));
         if(!selProd) closePop();
     }
 
     function toggleEdit() { isEdit = !isEdit; document.getElementById('editBtn').classList.toggle('active', isEdit); }
     function closePop() { document.getElementById('overlay').style.display = 'none'; }
-    function saveList() { localStorage.setItem('xexy_v4_list', JSON.stringify(mList)); }
+    function saveList() { localStorage.setItem('xexy_v5_list', JSON.stringify(mList)); }
     
     function search(q) {
         document.querySelectorAll('.box').forEach(b => b.classList.remove('blink'));
