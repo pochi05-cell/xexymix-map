@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>젝시믹스 재고지도 (수정 모드 강화)</title>
+    <title>젝시믹스 재고지도</title>
     <style>
         :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; transition: background 0.3s; }
         
-        /* [핵심] 수정 모드일 때 body 배경색 변경 */
+        /* 수정 모드 배경 효과 */
         body.edit-mode-active { background: #1a1a1a; }
         body.edit-mode-active .map-container { background: #e0e0e0; transition: 0.3s; }
         body.edit-mode-active .area-bar { background: #d0d0d0; }
@@ -23,13 +23,13 @@
 
         @media (min-width: 750px) { .main-wrapper { flex-direction: row; align-items: flex-start; } .global-header { width: 735px; } }
 
-        .area-bar { background: #f8f8f8; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border-bottom: 1px solid #eee; }
+        .area-bar { background: #f8f8f8; height: 45px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; border-bottom: 1px solid #eee; color: #333; }
         .box { position: absolute; border: 1.5px solid #333; cursor: pointer; z-index: 10; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background-clip: padding-box; pointer-events: auto !important; }
         .yellow { background: var(--yellow); } .brown { background: var(--brown); } .blue { background: var(--blue); }
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* 매장 및 창고 좌표 동일 */
+        /* 좌표 설정 */
         .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
         .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
         .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
@@ -42,16 +42,15 @@
         .counter-box { position: absolute; top: 535px; left: 82px; width: 200px; height: 38px; background: #eee; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #888; border: 1px solid #ccc; }
         .pos-br3 { top: 585px; left: 65px; width: 32px; height: 50px; } .pos-br4 { top: 645px; left: 65px; width: 32px; height: 50px; }
         .pos-y7 { top: 585px; right: 30px; width: 38px; height: 75px; } .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
-        .pos-u1 { top: 60px; left: 15px; width: 60px; height: 60px; } .pos-u2 { top: 60px; left: 85px; width: 60px; height: 60px; } .pos-u3 { top: 60px; left: 155px; width: 60px; height: 60px; } .pos-u4 { top: 140px; left: 15px; width: 60px; height: 60px; }
         .pos-s1 { top: 410px; left: 10px; width: 62px; height: 40px; } .pos-s2 { top: 410px; left: 78px; width: 62px; height: 40px; } .pos-s3 { top: 410px; left: 146px; width: 62px; height: 40px; } .pos-s4 { top: 410px; left: 214px; width: 62px; height: 40px; } .pos-s5 { top: 410px; left: 282px; width: 62px; height: 40px; } .pos-s6 { top: 480px; left: 15px; width: 55px; height: 90px; } .pos-s7 { top: 480px; right: 15px; width: 55px; height: 90px; } .pos-s8 { top: 580px; left: 75px; width: 55px; height: 90px; } .pos-s9 { top: 645px; left: 135px; width: 85px; height: 45px; }
 
         /* 팝업 스타일 */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:flex-end; }
-        .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; max-height: 95vh; }
-        .layer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; overflow-y: auto; padding-bottom: 20px; }
-        .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 8px; border-radius: 8px; }
-        .layer-item span { font-size: 11px; color: #888; font-weight: bold; margin-bottom: 4px; display: block; }
-        .layer-textarea { width: 100%; height: 70px; border: 1px solid #ddd; border-radius: 4px; padding: 5px; font-size: 13px; resize: none; box-sizing: border-box; }
+        .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
+        .layer-stack { display: flex; flex-direction: column-reverse; gap: 8px; overflow-y: auto; padding: 10px 0; }
+        .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
+        .layer-label { width: 35px; font-size: 13px; font-weight: bold; color: #333; text-align: center; border-right: 2px solid #ff4d4d; margin-right: 5px; }
+        .layer-textarea { flex: 1; height: 45px; border: 1px solid #ddd; border-radius: 4px; padding: 8px; font-size: 14px; resize: none; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -63,7 +62,7 @@
 
 <div class="main-wrapper">
     <div class="map-container">
-        <div class="area-bar">&lt;매장 진열 (SHOP)&gt;</div>
+        <div class="area-bar">&lt;매장&gt;</div>
         <div class="counter-box">카운터</div>
         <div id="Y1" class="box yellow pos-y1" onclick="openPop('Y1', 2)">Y1</div>
         <div id="Y2" class="box yellow pos-y2" onclick="openPop('Y2', 2)">Y2</div>
@@ -91,14 +90,17 @@
     </div>
 
     <div class="map-container">
-        <div class="area-bar">&lt;지하 창고 (Underground)&gt;</div>
-        <div id="U1" class="box blue pos-u1" onclick="openPop('U1', 4)">U1</div>
-        <div id="U2" class="box blue pos-u2" onclick="openPop('U2', 4)">U2</div>
-        <div id="U3" class="box blue pos-u3" onclick="openPop('U3', 4)">U3</div>
-        <div id="U4" class="box blue pos-u4" onclick="openPop('U4', 4)">U4</div>
-        <div style="position:absolute; top:250px; width:100%; text-align:center; color:#999; font-size:11px;">(지하 창고 업데이트 구역)</div>
-        <div style="position:absolute; top:360px; width:100%; border-top:2px dashed #bbb;"></div>
-        <div class="area-bar" style="position:absolute; top:362px; width:100%">&lt;매장 창고 (8층 규모)&gt;</div>
+        <div class="area-bar">&lt;지하 창고&gt;</div>
+        <div style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #bbb; padding: 20px; text-align: center;">
+            <p style="font-size: 14px;">지하 창고 구조 업데이트 예정</p>
+            <p style="font-size: 12px;">(구조 파악 후 박스가 배치될 공간입니다)</p>
+        </div>
+    </div>
+
+    <div class="map-container">
+        <div class="area-bar">&lt;매장 창고&gt;</div>
+        <div style="position:absolute; top:45px; width:100%; text-align:center; color:#eee; font-size:11px; padding:10px 0;">─── 상단 여백 ───</div>
+        
         <div id="S1" class="box yellow pos-s1" onclick="openPop('S1', 8)">S1</div>
         <div id="S2" class="box yellow pos-s2" onclick="openPop('S2', 8)">S2</div>
         <div id="S3" class="box yellow pos-s3" onclick="openPop('S3', 8)">S3</div>
@@ -113,12 +115,12 @@
 
 <div id="overlay">
     <div class="pop-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 id="popTitle" style="margin:0;"></h3>
-            <button onclick="closePopOnly()" style="background:none; border:none; font-size:28px; font-weight:bold;">×</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 id="popTitle" style="margin:0; font-size:18px;"></h3>
+            <button onclick="closePopOnly()" style="background:none; border:none; font-size:28px;">×</button>
         </div>
-        <div id="popLayers" class="layer-grid"></div>
-        <div id="popFooter"></div>
+        <div id="popLayers" class="layer-stack"></div>
+        <div id="popFooter" style="padding-top:10px;"></div>
     </div>
 </div>
 
@@ -132,18 +134,12 @@
         document.body.appendChild(script);
     }
 
-    window.setData = function(data) {
-        storage = data;
-        document.getElementById('searchInput').placeholder = "품번 검색...";
-    };
-
+    window.setData = function(data) { storage = data; document.getElementById('searchInput').placeholder = "품번 검색..."; };
     window.onload = loadData;
 
     function toggleEdit() {
         isEdit = !isEdit;
-        const btn = document.getElementById('editBtn');
-        btn.classList.toggle('active', isEdit);
-        // [수정] 배경색 모드 클래스 추가/제거
+        document.getElementById('editBtn').classList.toggle('active', isEdit);
         document.body.classList.toggle('edit-mode-active', isEdit);
     }
 
@@ -154,18 +150,18 @@
         document.getElementById('popTitle').innerText = id + " 위치 정보";
         const saved = storage[id] || [];
         
-        for(let i=layers; i>=1; i--) {
+        for(let i=1; i<=layers; i++) {
             container.innerHTML += `
                 <div class="layer-item">
-                    <span>${i}층</span>
+                    <div class="layer-label">${i}층</div>
                     <textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} 
-                        placeholder="${isEdit?'내용 입력 가능':''}"
+                        placeholder="${isEdit?'내용 입력':''}"
                         style="background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea>
                 </div>`;
         }
         document.getElementById('popFooter').innerHTML = isEdit ? 
-            `<button onclick="saveAndClose()" style="width:100%; padding:16px; background:#4CAF50; color:white; border:none; border-radius:12px; font-weight:bold; font-size:16px;">수정 내용 저장</button>` : 
-            `<button onclick="closePopOnly()" style="width:100%; padding:16px; background:#333; color:white; border:none; border-radius:12px; font-size:16px;">닫기</button>`;
+            `<button onclick="saveAndClose()" style="width:100%; padding:16px; background:#4CAF50; color:white; border:none; border-radius:12px; font-weight:bold;">저장하기</button>` : 
+            `<button onclick="closePopOnly()" style="width:100%; padding:16px; background:#333; color:white; border:none; border-radius:12px;">닫기</button>`;
         document.getElementById('overlay').style.display = 'flex';
     }
 
