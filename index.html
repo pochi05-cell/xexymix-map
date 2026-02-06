@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고지도 - 버그 수정판</title>
+    <title>젝시믹스 재고지도 - 완벽 수정판</title>
     <style>
         :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; --highlight: #ff4d4d; --dark-bg: rgba(0,0,0,0.7); }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
@@ -11,18 +11,41 @@
         /* 헤더 */
         .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 2000; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
-        .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s; }
-        .btn:active { transform: scale(0.95); }
+        .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .btn.active { background: var(--highlight); color: white; }
         #backupBtn { display: none; background: #555; color: white; }
 
-        /* 수정 모드 효과 (박스 위치 고정 필수!) */
+        /* [핵심 수정] 수정 모드 시 박스 스타일 */
         .edit-overlay { position: fixed; inset: 0; background: var(--dark-bg); z-index: 1500; display: none; pointer-events: none; transition: opacity 0.3s; }
         body.edit-mode .edit-overlay { display: block; }
         
-        /* [중요] 수정 모드에서도 absolute 유지, z-index만 상승 */
-        body.edit-mode .box { z-index: 1600; border-color: white; box-shadow: 0 0 8px rgba(255,255,255,0.5); } 
-        body.edit-mode .island, body.edit-mode .island-sq { z-index: 1600 !important; }
+        /* 수정 모드에서 박스 강조 (위치 이동 없음) */
+        body.edit-mode .box { z-index: 1600; border-color: white; box-shadow: 0 0 10px rgba(255,255,255,0.6); } 
+        
+        /* [중요] 수정 모드에서도 아일랜드 회전 절대 유지 */
+        body.edit-mode .island { transform: rotate(-45deg) !important; z-index: 1600 !important; }
+        body.edit-mode .island-sq { transform: rotate(-45deg) !important; z-index: 1600 !important; }
+
+        /* 지도 컨테이너 */
+        .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; color: #555; }
+        
+        /* 카운터 라벨 위치 수정 */
+        .counter-label { position: absolute; top: 38px; width: 100%; text-align: center; font-size: 13px; color: #888; font-weight: 800; letter-spacing: 1px; pointer-events: none; }
+
+        /* 박스 공통 */
+        .box { position: absolute !important; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; background-color: white; transition: transform 0.1s; }
+        
+        .yellow { background-color: var(--yellow) !important; }
+        .brown { background-color: var(--brown) !important; }
+        .blue { background-color: var(--blue) !important; }
+
+        /* 아일랜드 설정 */
+        .island { transform: rotate(-45deg); width: 68px; height: 68px; border-color: #222; }
+        #Y3 { z-index: 10; }
+        #Y4 { z-index: 10; }
+        #Y3-4 { width: 90px !important; height: 90px !important; z-index: 100; font-size: 13px; box-shadow: 0 0 15px rgba(0,0,0,0.15); }
+        .island-sq { transform: rotate(-45deg); width: 45px !important; height: 45px !important; z-index: 50; }
 
         /* 리스트 사이드바 */
         .drawer { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: white; z-index: 4000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); overflow-y: auto; padding: 20px; box-sizing: border-box; }
@@ -30,39 +53,15 @@
         .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3500; display: none; }
         .drawer-overlay.open { display: block; }
         .drawer-item { padding: 12px 5px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
-        .drawer-item:hover { background: #f0f0f0; }
-
-        /* 지도 영역 */
-        .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; color: #555; }
-        .counter-label { position: absolute; top: 50px; width: 100%; text-align: center; font-size: 12px; color: #aaa; font-weight: bold; pointer-events: none; }
-
-        /* 박스 디자인 */
-        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; background-color: white; transition: transform 0.1s; }
-        .box:active { transform: scale(0.95); }
-        
-        .yellow { background-color: var(--yellow) !important; }
-        .brown { background-color: var(--brown) !important; }
-        .blue { background-color: var(--blue) !important; }
-
-        /* 아일랜드 및 특수 박스 */
-        .island { transform: rotate(-45deg); width: 68px; height: 68px; border-color: #222; }
-        #Y3 { z-index: 10; }
-        #Y4 { z-index: 10; }
-        #Y3-4 { width: 90px !important; height: 90px !important; z-index: 100; font-size: 13px; box-shadow: 0 0 15px rgba(0,0,0,0.15); }
-        .island-sq { transform: rotate(-45deg); width: 45px !important; height: 45px !important; z-index: 50; }
+        .drawer-item b { color: var(--accent); margin-right: 5px; }
 
         /* 팝업 모달 */
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:5000; align-items:flex-end; justify-content:center; }
-        .pop-content { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 25px 20px; box-sizing: border-box; animation: slideUp 0.3s; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-        /* 입력 폼 */
+        .pop-content { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 25px 20px; box-sizing: border-box; }
         .layer-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         textarea { width: 100%; height: 50px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; outline: none; }
-        textarea:focus { border-color: var(--accent); background: white; }
 
-        /* 그리드 */
+        /* Y3-4 그리드 */
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .grid-item { background: #f9f9f9; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
         .grid-item b { display: block; font-size: 11px; margin-bottom: 4px; color: var(--accent); }
@@ -77,13 +76,14 @@
 <div class="drawer-overlay" onclick="toggleDrawer()"></div>
 
 <div id="drawer" class="drawer">
-    <h3>📦 전체 재고 리스트</h3>
+    <h3>📦 재고 리스트</h3>
+    <p style="font-size:12px; color:#666; margin-bottom:15px;">박스를 눌러 품번을 추가하면 여기에 나타납니다.</p>
     <div id="drawerList"></div>
 </div>
 
 <div class="global-header">
     <button class="btn" onclick="toggleDrawer()">📋</button>
-    <input type="text" id="searchInput" placeholder="검색..." onkeyup="search(this.value)">
+    <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="search(this.value)">
     <button id="backupBtn" class="btn" onclick="openBackup()">💾</button>
     <button id="editBtn" class="btn" onclick="toggleEdit()">✏️</button>
 </div>
@@ -91,8 +91,7 @@
 <div class="main-wrapper">
     <div class="map-container" id="shopMap">
         <div class="area-label">&lt;매장&gt;</div>
-        <div class="counter-label">COUNTER</div>
-    </div>
+        <div class="counter-label">COUNTER</div> </div>
     <div class="map-container" id="stockMap" style="height: 400px;">
         <div class="area-label">&lt;창고&gt;</div>
     </div>
@@ -108,26 +107,27 @@
 </div></div>
 
 <div id="backupModal" class="modal" style="align-items: center;"><div class="pop-content" style="background:#fff; border-radius:15px; width:90%;">
-    <h3>데이터 백업/복구</h3>
-    <p style="font-size:12px; color:#666;">데이터를 복사해두거나, 붙여넣고 복구하세요.</p>
-    <textarea id="backupArea" style="width:100%; height:150px; background:#f5f5f5; border:1px solid #ccc; font-family:monospace; margin-bottom:10px;"></textarea>
+    <h3>백업 및 복구</h3>
+    <textarea id="backupArea" style="width:100%; height:100px; background:#f5f5f5; border:1px solid #ccc; font-family:monospace; margin-bottom:10px;"></textarea>
     <div style="display:flex; gap:10px;">
-        <button onclick="importData()" style="flex:1; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold;">복구하기</button>
+        <button onclick="importData()" style="flex:1; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px;">복구</button>
         <button onclick="document.getElementById('backupModal').style.display='none'" style="flex:1; padding:12px; background:#666; color:white; border:none; border-radius:8px;">닫기</button>
     </div>
 </div></div>
 
 <script>
-    // [데이터 정의]
     const shopBoxes = [
-        // 카운터
-        {id:'Y1', c:'yellow', t:70, l:60, w:90, h:35, f:2}, {id:'Y2', c:'yellow', t:70, r:30, w:90, h:35, f:2},
+        // [카운터 위치 상향 조정] Top 60px (라벨은 38px)
+        {id:'Y1', c:'yellow', t:60, l:60, w:90, h:35, f:2}, 
+        {id:'Y2', c:'yellow', t:60, r:30, w:90, h:35, f:2},
+        
         // 아일랜드
         {id:'Y3', c:'blue island', t:142, l:133, f:1},     
         {id:'Y3-4', c:'blue island', t:175, l:158, f:4},   
         {id:'Y4', c:'blue island', t:238, l:218, f:1},     
         {id:'Br1', c:'brown island-sq', t:210, l:95, f:4}, 
         {id:'Br2', c:'brown island-sq', t:255, l:140, f:4},
+
         // 주변 박스
         {id:'B1', c:'blue', t:130, l:25, w:38, h:55, f:1}, {id:'B2', c:'blue', t:195, l:25, w:38, h:55, f:1},
         {id:'B3', c:'blue', t:260, l:25, w:38, h:55, f:1}, {id:'B4', c:'blue', t:325, l:25, w:38, h:55, f:1},
@@ -146,7 +146,7 @@
     ];
 
     let isEdit = false, currId = null;
-    let storage = JSON.parse(localStorage.getItem('xexy_full_v3')) || {};
+    let storage = JSON.parse(localStorage.getItem('xexy_final_fixed')) || {}; // 키 변경하여 충돌 방지
 
     function init() {
         createBoxes(shopBoxes, 'shopMap', false);
@@ -161,15 +161,12 @@
             div.id = b.id;
             div.className = `box ${isStock ? 'blue' : b.c}`;
             div.innerText = b.id;
-            // 좌표 설정
-            let pos = `top:${b.t}px; ${b.l?'left:'+b.l+'px': (b.r?'right:'+b.r+'px':'')}; width:${b.w||60}px; height:${b.h||40}px;`;
-            div.style.cssText = pos;
+            div.style.cssText = `top:${b.t}px; ${b.l?'left:'+b.l+'px': (b.r?'right:'+b.r+'px':'')}; width:${b.w||60}px; height:${b.h||40}px;`;
             div.onclick = () => openPop(b.id, b.f || 1);
             target.appendChild(div);
         });
     }
 
-    // 팝업 열기
     function openPop(id, f) {
         currId = id; document.getElementById('popTitle').innerText = id;
         const saved = storage[id] || [];
@@ -190,42 +187,33 @@
         document.getElementById('overlay').style.display = 'flex';
     }
 
-    // 수정 모드 전환
     function toggleEdit() {
         isEdit = !isEdit;
         document.body.classList.toggle('edit-mode', isEdit);
         document.getElementById('editBtn').classList.toggle('active', isEdit);
         document.getElementById('backupBtn').style.display = isEdit ? 'flex' : 'none';
-        
         if(!isEdit) document.querySelector('.edit-overlay').style.display = 'none';
     }
 
-    // 사이드바 제어
     function toggleDrawer() {
         document.getElementById('drawer').classList.toggle('open');
         document.querySelector('.drawer-overlay').classList.toggle('open');
         if(document.getElementById('drawer').classList.contains('open')) updateDrawer();
     }
 
-    // 리스트 업데이트
     function updateDrawer() {
         let html = '';
         const sortedKeys = Object.keys(storage).sort();
-        let hasData = false;
         
         sortedKeys.forEach(key => {
             const items = storage[key].filter(v => v.trim() !== '');
             if(items.length > 0) {
-                hasData = true;
-                html += `<div class="drawer-item" onclick="moveToBox('${key}')">
-                    <span style="color:var(--accent); font-weight:bold;">[${key}]</span> ${items.join(', ')}
-                </div>`;
+                html += `<div class="drawer-item" onclick="moveToBox('${key}')"><b>[${key}]</b> ${items.join(', ')}</div>`;
             }
         });
-        document.getElementById('drawerList').innerHTML = html || '<p style="text-align:center; color:#999; margin-top:20px;">저장된 품번이 없습니다.<br>박스를 눌러 추가하세요.</p>';
+        document.getElementById('drawerList').innerHTML = html || '<p style="text-align:center; color:#999; margin-top:20px;">저장된 품번이 없습니다.</p>';
     }
 
-    // 박스로 이동
     function moveToBox(id) {
         toggleDrawer();
         const target = document.getElementById(id);
@@ -235,34 +223,16 @@
         }
     }
 
-    // 저장
     function save() {
         const ipts = document.querySelectorAll('#popLayers textarea');
         storage[currId] = Array.from(ipts).map(i => i.value);
-        localStorage.setItem('xexy_full_v3', JSON.stringify(storage));
-        updateDrawer(); // 즉시 리스트 갱신
+        localStorage.setItem('xexy_final_fixed', JSON.stringify(storage));
+        updateDrawer();
         closePop();
     }
 
     function closePop() { document.getElementById('overlay').style.display = 'none'; }
-
-    // 백업/복구
-    function openBackup() {
-        document.getElementById('backupArea').value = JSON.stringify(storage);
-        document.getElementById('backupModal').style.display = 'flex';
-    }
-    function importData() {
-        try {
-            const val = document.getElementById('backupArea').value;
-            if(!val) return;
-            storage = JSON.parse(val);
-            localStorage.setItem('xexy_full_v3', JSON.stringify(storage));
-            alert("데이터가 복구되었습니다.");
-            location.reload();
-        } catch(e) { alert("데이터 형식 오류"); }
-    }
-
-    // 검색
+    
     function search(q) {
         document.querySelectorAll('.box').forEach(b => b.classList.remove('blink'));
         if(!q.trim()) return;
@@ -270,8 +240,25 @@
             if(storage[id].some(v => v.toLowerCase().includes(q.toLowerCase()))) {
                 const target = document.getElementById(id);
                 if(target) target.classList.add('blink');
+                if(!target.className.includes('blink')) target.scrollIntoView({behavior:'smooth', block:'center'});
             }
         }
+    }
+
+    function openBackup() {
+        document.getElementById('backupArea').value = JSON.stringify(storage);
+        document.getElementById('backupModal').style.display = 'flex';
+    }
+    
+    function importData() {
+        try {
+            const val = document.getElementById('backupArea').value;
+            if(!val) return;
+            storage = JSON.parse(val);
+            localStorage.setItem('xexy_final_fixed', JSON.stringify(storage));
+            alert("복구 완료!");
+            location.reload();
+        } catch(e) { alert("데이터 오류"); }
     }
 
     init();
