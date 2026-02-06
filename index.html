@@ -2,19 +2,33 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고지도 (연동 복구판)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>젝시믹스 재고지도 (모바일 최적화)</title>
     <style>
         :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
-        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        
+        /* [핵심 수정] body의 고정 높이와 hidden 속성 제거 */
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: #333; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; /* 최소 높이만 지정 */
+            overflow-y: auto;  /* 세로 스크롤 허용 */
+            -webkit-overflow-scrolling: touch; /* 아이폰 부드러운 스크롤 */
+        }
         
         /* 수정 모드 효과 */
         body.edit-active .area-bar, body.edit-active .counter-box, body.edit-active .map-container { background-color: #999 !important; transition: 0.3s; }
         body.edit-active .box { filter: brightness(1.1); z-index: 1000 !important; border: 2px solid #000; pointer-events: auto !important; }
 
-        /* [상단바 가로폭 최적화] */
+        /* 상단바 폭 유지 및 모바일 대응 */
         .global-header { 
             width: 710px; 
+            max-width: 98vw; /* 화면보다 커지지 않게 조정 */
             background: white; 
             display: flex; 
             gap: 10px; 
@@ -22,26 +36,18 @@
             margin-top: 10px; 
             border-radius: 12px 12px 0 0; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-            z-index: 200; /* 클릭이 안 되는 문제를 방지하기 위해 z-index 상향 */
+            z-index: 200; 
             box-sizing: border-box; 
             align-items: center; 
-            position: relative;
+            position: sticky; /* 스크롤해도 검색창은 위에 고정 */
+            top: 0;
         }
-        #searchInput { 
-            flex: 1; 
-            padding: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            outline: none; 
-            cursor: text; /* 커서 모양 강제 지정 */
-        }
-        .icon-btn { width: 45px; height: 45px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.2s; }
-        .icon-btn.active { background: #ff4d4d; color: white; transform: scale(1.05); }
+        #searchInput { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
 
-        /* 하단 지도 영역 */
+        /* 지도 영역 스크롤 대응 */
         .main-wrapper { 
             width: 710px; 
+            max-width: 98vw;
             display: flex; 
             gap: 2px; 
             background: #ccc; 
@@ -50,25 +56,33 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.2); 
             position: relative; 
             box-sizing: border-box;
+            margin-bottom: 20px; /* 하단 여유 공간 */
         }
-        .map-container { background: white; width: 354px; height: 690px; position: relative; overflow: hidden; transition: 0.3s; }
-        .area-bar { background: #f8f8f8; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #333; font-size: 13px; border-bottom: 1px solid #eee; position: relative; z-index: 10; }
         
-        /* 중앙 구분선 및 여백 레이블 */
-        .divider { position: absolute; top: 345px; left: 0; width: 100%; height: 2px; background: #eee; z-index: 5; }
-        .sub-label { position: absolute; top: 150px; left: 0; width: 100%; text-align: center; color: #ccc; font-weight: bold; font-size: 14px; }
+        /* 각 지도 컨테이너 */
+        .map-container { background: white; width: 50%; height: 750px; position: relative; overflow: hidden; transition: 0.3s; }
 
+        /* 이하 상자 및 좌표 스타일은 동일 (생략하지 않고 통합 코드에 포함) */
+        .area-bar { background: #f8f8f8; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #333; font-size: 13px; border-bottom: 1px solid #eee; position: relative; z-index: 10; }
+        .divider { position: absolute; top: 375px; left: 0; width: 100%; height: 2px; background: #eee; z-index: 5; }
+        .sub-label { position: absolute; top: 150px; left: 0; width: 100%; text-align: center; color: #ccc; font-weight: bold; font-size: 14px; }
         .box { position: absolute; border: 1.5px solid #333; cursor: pointer; z-index: 10; border-radius: 1px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #333; transition: 0.2s; background-clip: padding-box; }
         .yellow { background: var(--yellow); } .brown { background: var(--brown); } .blue { background: var(--blue); }
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; border-color: white !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* 매장 창고 및 SHOP 좌표 (동일 유지) */
-        .pos-s1 { top: 400px; left: 10px; width: 62px; height: 40px; } .pos-s2 { top: 400px; left: 77px; width: 62px; height: 40px; }
-        .pos-s3 { top: 400px; left: 144px; width: 62px; height: 40px; } .pos-s4 { top: 400px; left: 211px; width: 62px; height: 40px; }
-        .pos-s5 { top: 400px; left: 278px; width: 62px; height: 40px; } .pos-s6 { top: 480px; left: 10px; width: 50px; height: 80px; }
-        .pos-s7 { top: 480px; right: 10px; width: 50px; height: 80px; } .pos-s8 { top: 580px; left: 60px; width: 50px; height: 80px; }
-        .pos-s9 { top: 640px; left: 120px; width: 75px; height: 40px; }
+        /* 좌표 설정 (하단 매장창고 위주 재조정) */
+        .pos-s1 { top: 420px; left: 5px; width: 62px; height: 40px; }
+        .pos-s2 { top: 420px; left: 70px; width: 62px; height: 40px; }
+        .pos-s3 { top: 420px; left: 135px; width: 62px; height: 40px; }
+        .pos-s4 { top: 420px; left: 200px; width: 62px; height: 40px; }
+        .pos-s5 { top: 420px; left: 265px; width: 62px; height: 40px; }
+        .pos-s6 { top: 500px; left: 10px; width: 50px; height: 80px; }
+        .pos-s7 { top: 500px; right: 10px; width: 50px; height: 80px; }
+        .pos-s8 { top: 600px; left: 60px; width: 50px; height: 80px; }
+        .pos-s9 { top: 680px; left: 120px; width: 75px; height: 40px; }
+
+        /* 매장 진열 (SHOP) 좌표 */
         .pos-y1 { top: 80px; left: 55px; width: 85px; height: 35px; } .pos-y2 { top: 80px; right: 25px; width: 85px; height: 35px; }
         .pos-b1 { top: 140px; left: 15px; width: 32px; height: 55px; } .pos-b2 { top: 205px; left: 15px; width: 32px; height: 55px; }
         .pos-b3 { top: 270px; left: 15px; width: 32px; height: 55px; } .pos-b4 { top: 335px; left: 15px; width: 32px; height: 55px; }
@@ -82,15 +96,9 @@
         .pos-br3 { top: 575px; left: 55px; width: 28px; height: 45px; } .pos-br4 { top: 630px; left: 55px; width: 28px; height: 45px; }
         .pos-y7 { top: 575px; right: 25px; width: 35px; height: 65px; } .pos-y8 { bottom: 15px; left: 135px; width: 75px; height: 42px; } .pos-y9 { bottom: 15px; left: 220px; width: 75px; height: 42px; }
 
-        /* 팝업 레이아웃 */
+        /* 팝업 모바일 대응 */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; justify-content:center; align-items:center; backdrop-filter: blur(4px); }
-        .pop-content { background:white; width:340px; border-radius:12px; padding:20px; max-height: 85vh; display: flex; flex-direction: column; }
-        .pop-body { overflow-y: auto; flex: 1; margin-bottom: 15px; }
-        .layer-row { display:flex; flex-direction: column; margin-bottom:12px; gap: 5px; }
-        .layer-label { font-size:12px; font-weight:bold; color: #555; }
-        .layer-textarea { width: 100%; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; resize: none; min-height: 45px; box-sizing: border-box; }
-        .btn-main { width:100%; padding:14px; color:white; border:none; border-radius:8px; font-weight:bold; cursor: pointer; font-size: 15px; }
-        .btn-save { background:#4CAF50; } .btn-close { background:#333; }
+        .pop-content { background:white; width:90%; max-width: 360px; border-radius:12px; padding:20px; max-height: 80vh; display: flex; flex-direction: column; }
     </style>
 </head>
 <body>
@@ -105,7 +113,7 @@
         <div class="area-bar">&lt;지하창고&gt;</div>
         <div class="sub-label">(업데이트 중)</div>
         <div class="divider"></div>
-        <div class="area-bar" style="position: absolute; top: 347px; width: 100%; border-bottom: none;">&lt;매장창고&gt;</div>
+        <div class="area-bar" style="position: absolute; top: 377px; width: 100%; border-bottom: none;">&lt;매장창고&gt;</div>
         
         <div id="S1" class="box yellow pos-s1" onclick="openPop('S1', 8)">S1</div>
         <div id="S2" class="box yellow pos-s2" onclick="openPop('S2', 8)">S2</div>
@@ -147,21 +155,16 @@
     </div>
 </div>
 
-<div id="overlay"><div class="pop-content"><h4 id="popTitle" style="margin:0 0 15px 0; border-bottom:1px solid #eee; padding-bottom:10px;"></h4><div id="popLayers" class="pop-body"></div><div id="popFooter"></div></div></div>
+<div id="overlay"><div class="pop-content"><h4 id="popTitle" style="margin:0 0 15px 0; border-bottom:1px solid #eee; padding-bottom:10px;"></h4><div id="popLayers" style="overflow-y:auto; flex:1; margin-bottom:15px;"></div><div id="popFooter"></div></div></div>
 
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhFYws68vkmdvGntDA0ItTMopwGnSV9glALHN09Cda9SxISlS4hmDkijwGD07ya8pO/exec";
-    let isEdit = false; 
-    let storage = {}; 
-    let currId = '';
+    let isEdit = false; let storage = {}; let currId = '';
 
-    // 데이터 로드 함수 (JSONP 방식)
     function loadData() {
         const script = document.createElement('script');
         script.src = `${SCRIPT_URL}?callback=setData&t=${new Date().getTime()}`;
         document.body.appendChild(script);
-
-        // 3초 내에 응답이 없으면 강제로 검색바 활성화 (안전장치)
         setTimeout(() => {
             const input = document.getElementById('searchInput');
             if (input.placeholder === "데이터 동기화 중...") {
@@ -171,7 +174,6 @@
         }, 3000);
     }
 
-    // 콜백 함수
     window.setData = function(data) {
         storage = data;
         const input = document.getElementById('searchInput');
@@ -194,14 +196,17 @@
         document.getElementById('popTitle').innerText = id + " 위치 정보";
         const saved = storage[id] || [];
         for(let i=layers; i>=1; i--) {
-            container.innerHTML += `<div class="layer-row"><span class="layer-label">${i}층</span><textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} style="background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea></div>`;
+            container.innerHTML += `<div style="display:flex; flex-direction:column; margin-bottom:12px; gap:5px;">
+                <span style="font-size:12px; font-weight:bold; color:#555;">${i}층</span>
+                <textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; resize:none; min-height:45px; box-sizing:border-box; background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea>
+            </div>`;
         }
-        document.getElementById('popFooter').innerHTML = isEdit ? `<button onclick="saveAndClose()" class="btn-main btn-save">저장 후 닫기</button>` : `<button onclick="closePopOnly()" class="btn-main btn-close">닫기</button>`;
+        document.getElementById('popFooter').innerHTML = isEdit ? `<button onclick="saveAndClose()" style="width:100%; padding:14px; background:#4CAF50; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">저장 후 닫기</button>` : `<button onclick="closePopOnly()" style="width:100%; padding:14px; background:#333; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">닫기</button>`;
         document.getElementById('overlay').style.display = 'flex';
     }
 
     function saveAndClose() {
-        const btn = document.querySelector('.btn-save');
+        const btn = document.querySelector('#popFooter button');
         btn.disabled = true; btn.innerText = "저장 중...";
         const inputs = document.querySelectorAll('.layer-textarea');
         const arr = [];
