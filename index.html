@@ -3,57 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고지도 - 완벽 수정판</title>
+    <title>젝시믹스 재고 관리 - 최종판</title>
     <style>
-        :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; --highlight: #ff4d4d; --dark-bg: rgba(0,0,0,0.7); }
+        :root { 
+            --yellow: #fdd835; /* 진한 노랑 */
+            --yellow-light: #fff59d; 
+            --gray-border: #9e9e9e;
+            --accent: #4CAF50; 
+            --highlight: #ff5252; 
+            --dark-bg: rgba(0,0,0,0.7); 
+        }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
         
         /* 헤더 */
         .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 2000; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
-        .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .btn.active { background: var(--highlight); color: white; }
-        #backupBtn { display: none; background: #555; color: white; }
-
-        /* [핵심 수정] 수정 모드 시 박스 스타일 */
-        .edit-overlay { position: fixed; inset: 0; background: var(--dark-bg); z-index: 1500; display: none; pointer-events: none; transition: opacity 0.3s; }
-        body.edit-mode .edit-overlay { display: block; }
+        .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition:0.2s; }
+        .btn.active { background: var(--accent); color: white; }
+        .btn.mode-active { background: var(--highlight); color: white; animation: pulse 1s infinite; }
         
-        /* 수정 모드에서 박스 강조 (위치 이동 없음) */
-        body.edit-mode .box { z-index: 1600; border-color: white; box-shadow: 0 0 10px rgba(255,255,255,0.6); } 
-        
-        /* [중요] 수정 모드에서도 아일랜드 회전 절대 유지 */
-        body.edit-mode .island { transform: rotate(-45deg) !important; z-index: 1600 !important; }
-        body.edit-mode .island-sq { transform: rotate(-45deg) !important; z-index: 1600 !important; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         /* 지도 컨테이너 */
-        .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; color: #555; }
+        .map-container { background: white; width: 360px; height: 780px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; color: #555; border-bottom: 1px solid #ddd; }
         
-        /* 카운터 라벨 위치 수정 */
-        .counter-label { position: absolute; top: 38px; width: 100%; text-align: center; font-size: 13px; color: #888; font-weight: 800; letter-spacing: 1px; pointer-events: none; }
+        /* 카운터 영역 (회색 테두리) */
+        .counter-zone {
+            position: absolute; top: 600px; left: 20px; right: 20px; height: 100px;
+            border: 3px solid var(--gray-border); background-color: #f5f5f5; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; z-index: 0;
+        }
+        .counter-text {
+            position: absolute; top: -12px; background: #f5f5f5; padding: 0 10px;
+            font-weight: bold; color: #555; font-size: 14px;
+        }
 
-        /* 박스 공통 */
-        .box { position: absolute !important; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; background-color: white; transition: transform 0.1s; }
+        /* 박스 디자인 (전부 노랑) */
+        .box { 
+            position: absolute !important; 
+            border: 1px solid #b7950b; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 10px; font-weight: bold; cursor: pointer; 
+            border-radius: 3px; box-sizing: border-box; 
+            background-color: var(--yellow); 
+            color: #333;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.1s; 
+            z-index: 5;
+        }
+        .box:active { transform: scale(0.95); }
         
-        .yellow { background-color: var(--yellow) !important; }
-        .brown { background-color: var(--brown) !important; }
-        .blue { background-color: var(--blue) !important; }
-
-        /* 아일랜드 설정 */
-        .island { transform: rotate(-45deg); width: 68px; height: 68px; border-color: #222; }
-        #Y3 { z-index: 10; }
-        #Y4 { z-index: 10; }
-        #Y3-4 { width: 90px !important; height: 90px !important; z-index: 100; font-size: 13px; box-shadow: 0 0 15px rgba(0,0,0,0.15); }
+        /* 아일랜드 (Y3, Y3-4 겹침) */
+        .island { transform: rotate(-45deg); width: 68px; height: 68px; border-radius: 8px; }
+        #Y3 { z-index: 20; } /* 위로 올라옴 */
+        #Y3-4 { width: 90px !important; height: 90px !important; z-index: 10; font-size: 13px; box-shadow: 0 0 10px rgba(0,0,0,0.1); background-color: var(--yellow-light); }
         .island-sq { transform: rotate(-45deg); width: 45px !important; height: 45px !important; z-index: 50; }
 
-        /* 리스트 사이드바 */
-        .drawer { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: white; z-index: 4000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        /* 수정 모드 오버레이 */
+        .edit-overlay { position: fixed; inset: 0; background: var(--dark-bg); z-index: 1500; display: none; pointer-events: none; }
+        body.edit-mode .edit-overlay { display: block; }
+        body.edit-mode .box { z-index: 1600; border: 2px solid white; box-shadow: 0 0 15px rgba(255,255,255,0.8); }
+        /* 수정 모드 아일랜드 회전 유지 */
+        body.edit-mode .island, body.edit-mode .island-sq { transform: rotate(-45deg) !important; z-index: 1600 !important; }
+
+        /* 리스트 사이드바 (기능 추가) */
+        .drawer { position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: white; z-index: 4000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); overflow-y: auto; display: flex; flex-direction: column; }
         .drawer.open { left: 0; }
         .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3500; display: none; }
         .drawer-overlay.open { display: block; }
-        .drawer-item { padding: 12px 5px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
-        .drawer-item b { color: var(--accent); margin-right: 5px; }
+        
+        /* 리스트 내 품번 추가 영역 */
+        .add-zone { padding: 20px; background: #fafafa; border-bottom: 1px solid #ddd; }
+        .add-zone h4 { margin: 0 0 10px 0; font-size: 14px; color: #333; }
+        .input-group { display: flex; gap: 5px; }
+        .input-group input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
+        .input-group button { padding: 10px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        .drawer-list-container { flex: 1; overflow-y: auto; padding: 10px; }
+        .drawer-item { padding: 12px 10px; border-bottom: 1px solid #f0f0f0; font-size: 14px; cursor: pointer; }
+        .drawer-item b { color: #dda0dd; /* 연보라색 강조 */ margin-right: 5px; }
 
         /* 팝업 모달 */
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:5000; align-items:flex-end; justify-content:center; }
@@ -61,37 +90,50 @@
         .layer-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         textarea { width: 100%; height: 50px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; outline: none; }
 
-        /* Y3-4 그리드 */
+        /* 그리드 */
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .grid-item { background: #f9f9f9; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
-        .grid-item b { display: block; font-size: 11px; margin-bottom: 4px; color: var(--accent); }
 
         .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; z-index: 2000 !important; }
         @keyframes blink { 50% { opacity: 0.3; } }
+        
+        /* 배치 모드 안내 메시지 */
+        #assignMsg { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: var(--highlight); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 3000; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
 <div class="edit-overlay"></div>
-<div class="drawer-overlay" onclick="toggleDrawer()"></div>
+<div class="drawer-overlay" onclick="closeDrawer()"></div>
+<div id="assignMsg">박스를 눌러 배치하세요!</div>
 
 <div id="drawer" class="drawer">
-    <h3>📦 재고 리스트</h3>
-    <p style="font-size:12px; color:#666; margin-bottom:15px;">박스를 눌러 품번을 추가하면 여기에 나타납니다.</p>
-    <div id="drawerList"></div>
+    <div class="add-zone">
+        <h4>✨ 새 품번 추가하기</h4>
+        <div class="input-group">
+            <input type="text" id="newCode" placeholder="품번 입력 (예: XP9108)">
+            <button onclick="startAssignMode()">지도에<br>배치</button>
+        </div>
+        <p style="font-size:11px; color:#666; margin-top:5px;">입력 후 버튼을 누르고, 지도에서 박스를 클릭하세요.</p>
+    </div>
+    <div class="drawer-list-container" id="drawerList"></div>
 </div>
 
 <div class="global-header">
-    <button class="btn" onclick="toggleDrawer()">📋</button>
+    <button class="btn" onclick="openDrawer()">📋</button>
     <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="search(this.value)">
-    <button id="backupBtn" class="btn" onclick="openBackup()">💾</button>
+    <button id="backupBtn" class="btn" style="display:none; background:#555; color:white;" onclick="openBackup()">💾</button>
     <button id="editBtn" class="btn" onclick="toggleEdit()">✏️</button>
 </div>
 
 <div class="main-wrapper">
     <div class="map-container" id="shopMap">
         <div class="area-label">&lt;매장&gt;</div>
-        <div class="counter-label">COUNTER</div> </div>
+        
+        <div class="counter-zone">
+            <div class="counter-text">카운터</div>
+        </div>
+    </div>
     <div class="map-container" id="stockMap" style="height: 400px;">
         <div class="area-label">&lt;창고&gt;</div>
     </div>
@@ -103,7 +145,7 @@
         <button onclick="closePop()" style="border:none; background:none; font-size:20px;">✕</button>
     </div>
     <div id="popLayers"></div>
-    <button onclick="save()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; font-size:16px;">저장</button>
+    <button onclick="save()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold; font-size:16px;">저장 완료</button>
 </div></div>
 
 <div id="backupModal" class="modal" style="align-items: center;"><div class="pop-content" style="background:#fff; border-radius:15px; width:90%;">
@@ -116,28 +158,32 @@
 </div></div>
 
 <script>
+    // [데이터: 모든 박스 yellow, 좌표 조정]
     const shopBoxes = [
-        // [카운터 위치 상향 조정] Top 60px (라벨은 38px)
-        {id:'Y1', c:'yellow', t:60, l:60, w:90, h:35, f:2}, 
-        {id:'Y2', c:'yellow', t:60, r:30, w:90, h:35, f:2},
+        // 아일랜드 (Y3, Y3-4 겹침 구현)
+        {id:'Y3', t:155, l:145, f:1, type:'island'},      // 약간 오른쪽 아래로 이동해 겹침
+        {id:'Y3-4', t:175, l:158, f:4, type:'island'},    // 중심
+        {id:'Y4', t:238, l:218, f:1, type:'island'},      
         
-        // 아일랜드
-        {id:'Y3', c:'blue island', t:142, l:133, f:1},     
-        {id:'Y3-4', c:'blue island', t:175, l:158, f:4},   
-        {id:'Y4', c:'blue island', t:238, l:218, f:1},     
-        {id:'Br1', c:'brown island-sq', t:210, l:95, f:4}, 
-        {id:'Br2', c:'brown island-sq', t:255, l:140, f:4},
+        {id:'Br1', t:210, l:95, f:4, type:'island-sq'}, 
+        {id:'Br2', t:255, l:140, f:4, type:'island-sq'},
 
-        // 주변 박스
-        {id:'B1', c:'blue', t:130, l:25, w:38, h:55, f:1}, {id:'B2', c:'blue', t:195, l:25, w:38, h:55, f:1},
-        {id:'B3', c:'blue', t:260, l:25, w:38, h:55, f:1}, {id:'B4', c:'blue', t:325, l:25, w:38, h:55, f:1},
-        {id:'B5', c:'blue', t:130, r:25, w:38, h:55, f:1}, {id:'B6', c:'blue', t:195, r:25, w:38, h:55, f:1},
-        {id:'B7', c:'blue', t:260, r:25, w:38, h:55, f:1}, {id:'B8', c:'blue', t:325, r:25, w:38, h:55, f:1},
-        {id:'B9', c:'blue', t:395, l:85, w:70, h:38, f:1}, {id:'B10', c:'blue', t:395, r:85, w:70, h:38, f:1},
-        {id:'Y5', c:'yellow', t:450, r:25, w:38, h:70, f:4}, {id:'Y6', c:'yellow', t:450, l:220, w:38, h:70, f:4},
-        {id:'Br3', c:'brown', t:585, l:65, w:32, h:50, f:2}, {id:'Br4', c:'brown', t:645, l:65, w:32, h:50, f:2},
-        {id:'Y7', c:'yellow', t:585, r:30, w:38, h:75, f:4}, {id:'Y8', c:'yellow', t:650, l:145, w:80, h:45, f:2},
-        {id:'Y9', c:'yellow', t:650, l:235, w:80, h:45, f:2}
+        // 주변 B 시리즈 (모두 노랑)
+        {id:'B1', t:130, l:25, w:38, h:55, f:1}, {id:'B2', t:195, l:25, w:38, h:55, f:1},
+        {id:'B3', t:260, l:25, w:38, h:55, f:1}, {id:'B4', t:325, l:25, w:38, h:55, f:1},
+        {id:'B5', t:130, r:25, w:38, h:55, f:1}, {id:'B6', t:195, r:25, w:38, h:55, f:1},
+        {id:'B7', t:260, r:25, w:38, h:55, f:1}, {id:'B8', t:325, r:25, w:38, h:55, f:1},
+        
+        // 하단부
+        {id:'B9', t:395, l:85, w:70, h:38, f:1}, {id:'B10', t:395, r:85, w:70, h:38, f:1},
+        {id:'Y5', t:450, r:25, w:38, h:70, f:4}, {id:'Y6', t:450, l:220, w:38, h:70, f:4},
+        {id:'Br3', t:585, l:65, w:32, h:50, f:2}, {id:'Br4', t:645, l:65, w:32, h:50, f:2},
+        {id:'Y7', t:585, r:30, w:38, h:75, f:4}, {id:'Y8', t:650, l:145, w:80, h:45, f:2},
+        {id:'Y9', t:650, l:235, w:80, h:45, f:2},
+
+        // [카운터] Y5, Y6 아래쪽 (회색 박스 안)
+        {id:'Y1', t:620, l:50, w:80, h:60, f:2}, 
+        {id:'Y2', t:620, r:50, w:80, h:60, f:2}
     ];
 
     const stockBoxes = [
@@ -145,26 +191,88 @@
         {id:'S6', t:140, l:15, w:55, h:90}, {id:'S7', t:140, r:15, w:55, h:90}, {id:'S8', t:240, l:75, w:55, h:90}, {id:'S9', t:305, l:135, w:85, h:45}
     ];
 
-    let isEdit = false, currId = null;
-    let storage = JSON.parse(localStorage.getItem('xexy_final_fixed')) || {}; // 키 변경하여 충돌 방지
+    let isEdit = false, isAssigning = false, pendingCode = "";
+    let currId = null;
+    let storage = JSON.parse(localStorage.getItem('xexy_final_v4')) || {};
 
     function init() {
-        createBoxes(shopBoxes, 'shopMap', false);
-        createBoxes(stockBoxes, 'stockMap', true);
+        createBoxes(shopBoxes, 'shopMap');
+        createBoxes(stockBoxes, 'stockMap');
         updateDrawer();
     }
 
-    function createBoxes(data, targetId, isStock) {
+    function createBoxes(data, targetId) {
         const target = document.getElementById(targetId);
         data.forEach(b => {
             const div = document.createElement('div');
             div.id = b.id;
-            div.className = `box ${isStock ? 'blue' : b.c}`;
+            // 모든 박스 yellow 기반, 아일랜드는 추가 클래스
+            div.className = `box ${b.type || ''}`; 
             div.innerText = b.id;
             div.style.cssText = `top:${b.t}px; ${b.l?'left:'+b.l+'px': (b.r?'right:'+b.r+'px':'')}; width:${b.w||60}px; height:${b.h||40}px;`;
-            div.onclick = () => openPop(b.id, b.f || 1);
+            div.onclick = () => handleBoxClick(b.id, b.f || 1);
             target.appendChild(div);
         });
+    }
+
+    // [박스 클릭 로직] 배치 모드 vs 일반 모드 분기
+    function handleBoxClick(id, f) {
+        if(isAssigning) {
+            // 배치 모드: 해당 박스의 첫 번째 빈칸에 품번 넣기
+            assignToBox(id, f);
+        } else {
+            // 일반 모드: 팝업 열기 (수정/이동 가능)
+            openPop(id, f);
+        }
+    }
+
+    // [배치 모드 시작]
+    function startAssignMode() {
+        const code = document.getElementById('newCode').value.trim();
+        if(!code) { alert("품번을 입력해주세요!"); return; }
+        
+        pendingCode = code;
+        isAssigning = true;
+        closeDrawer();
+        
+        document.getElementById('assignMsg').style.display = 'block';
+        document.getElementById('assignMsg').innerText = `'${code}' 넣을 박스를 누르세요!`;
+        document.body.style.cursor = "crosshair"; // 커서 변경
+    }
+
+    // [배치 실행 로직]
+    function assignToBox(id, maxF) {
+        if(!storage[id]) storage[id] = new Array(maxF).fill("");
+        
+        // 빈 칸 찾기 (맨 앞부터)
+        let inserted = false;
+        for(let i=0; i<maxF; i++) {
+            if(!storage[id][i]) {
+                storage[id][i] = pendingCode;
+                inserted = true;
+                break;
+            }
+        }
+        // 꽉 찼으면 마지막 칸에 덮어쓰거나, 사용자에게 알림 (여기선 마지막 칸에 추가/덮어쓰기로 처리)
+        if(!inserted) {
+            if(confirm(`[${id}] 박스가 꽉 찼습니다. 마지막 칸에 덮어쓸까요?`)) {
+                storage[id][maxF-1] = pendingCode;
+            } else {
+                return; // 취소
+            }
+        }
+
+        localStorage.setItem('xexy_final_v4', JSON.stringify(storage));
+        
+        // 초기화
+        isAssigning = false;
+        pendingCode = "";
+        document.getElementById('newCode').value = "";
+        document.getElementById('assignMsg').style.display = 'none';
+        document.body.style.cursor = "default";
+        
+        alert(`[${id}]에 저장되었습니다.`);
+        updateDrawer();
     }
 
     function openPop(id, f) {
@@ -174,17 +282,26 @@
 
         if(id === 'Y3-4') {
             html = `<div class="grid-container">`;
+            const labels = ['상단좌', '상단우', '하단좌', '하단우'];
             for(let i=0; i<4; i++) {
-                html += `<div class="grid-item"><b>Area ${i+1}</b><textarea id="ipt_${i}" ${!isEdit?'readonly':''}>${saved[i]||''}</textarea></div>`;
+                html += `<div class="grid-item"><b>${labels[i]}</b><textarea id="ipt_${i}">${saved[i]||''}</textarea></div>`;
             }
             html += `</div>`;
         } else {
             for(let i=0; i<f; i++) {
-                html += `<div class="layer-row"><b>${i+1}F</b><textarea id="ipt_${i}" ${!isEdit?'readonly':''}>${saved[i]||''}</textarea></div>`;
+                html += `<div class="layer-row"><b>${i+1}F</b><textarea id="ipt_${i}">${saved[i]||''}</textarea></div>`;
             }
         }
         document.getElementById('popLayers').innerHTML = html;
         document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function save() {
+        const ipts = document.querySelectorAll('#popLayers textarea');
+        storage[currId] = Array.from(ipts).map(i => i.value);
+        localStorage.setItem('xexy_final_v4', JSON.stringify(storage));
+        updateDrawer();
+        closePop();
     }
 
     function toggleEdit() {
@@ -192,13 +309,16 @@
         document.body.classList.toggle('edit-mode', isEdit);
         document.getElementById('editBtn').classList.toggle('active', isEdit);
         document.getElementById('backupBtn').style.display = isEdit ? 'flex' : 'none';
-        if(!isEdit) document.querySelector('.edit-overlay').style.display = 'none';
     }
 
-    function toggleDrawer() {
-        document.getElementById('drawer').classList.toggle('open');
-        document.querySelector('.drawer-overlay').classList.toggle('open');
-        if(document.getElementById('drawer').classList.contains('open')) updateDrawer();
+    function openDrawer() {
+        document.getElementById('drawer').classList.add('open');
+        document.querySelector('.drawer-overlay').classList.add('open');
+        updateDrawer();
+    }
+    function closeDrawer() {
+        document.getElementById('drawer').classList.remove('open');
+        document.querySelector('.drawer-overlay').classList.remove('open');
     }
 
     function updateDrawer() {
@@ -206,7 +326,7 @@
         const sortedKeys = Object.keys(storage).sort();
         
         sortedKeys.forEach(key => {
-            const items = storage[key].filter(v => v.trim() !== '');
+            const items = storage[key].filter(v => v && v.trim() !== '');
             if(items.length > 0) {
                 html += `<div class="drawer-item" onclick="moveToBox('${key}')"><b>[${key}]</b> ${items.join(', ')}</div>`;
             }
@@ -215,22 +335,14 @@
     }
 
     function moveToBox(id) {
-        toggleDrawer();
+        closeDrawer();
         const target = document.getElementById(id);
         if(target) {
             target.classList.add('blink');
             target.scrollIntoView({behavior:'smooth', block:'center'});
         }
     }
-
-    function save() {
-        const ipts = document.querySelectorAll('#popLayers textarea');
-        storage[currId] = Array.from(ipts).map(i => i.value);
-        localStorage.setItem('xexy_final_fixed', JSON.stringify(storage));
-        updateDrawer();
-        closePop();
-    }
-
+    
     function closePop() { document.getElementById('overlay').style.display = 'none'; }
     
     function search(q) {
@@ -240,7 +352,6 @@
             if(storage[id].some(v => v.toLowerCase().includes(q.toLowerCase()))) {
                 const target = document.getElementById(id);
                 if(target) target.classList.add('blink');
-                if(!target.className.includes('blink')) target.scrollIntoView({behavior:'smooth', block:'center'});
             }
         }
     }
@@ -249,13 +360,12 @@
         document.getElementById('backupArea').value = JSON.stringify(storage);
         document.getElementById('backupModal').style.display = 'flex';
     }
-    
     function importData() {
         try {
             const val = document.getElementById('backupArea').value;
             if(!val) return;
             storage = JSON.parse(val);
-            localStorage.setItem('xexy_final_fixed', JSON.stringify(storage));
+            localStorage.setItem('xexy_final_v4', JSON.stringify(storage));
             alert("복구 완료!");
             location.reload();
         } catch(e) { alert("데이터 오류"); }
