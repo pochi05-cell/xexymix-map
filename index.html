@@ -32,22 +32,49 @@
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* 매장/창고 좌표 (기존과 동일) */
-        .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
-        .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
-        .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
-        .pos-b5 { top: 130px; right: 25px; width: 35px; height: 55px; } .pos-b6 { top: 195px; right: 25px; width: 35px; height: 55px; }
-        .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
-        .island-y { transform: rotate(-45deg); width: 60px; height: 85px; } .pos-y3 { top: 180px; left: 140px; } .pos-y4 { top: 245px; left: 195px; }
-        .island-br { transform: rotate(-45deg); width: 35px; height: 70px; } .pos-br1 { top: 255px; left: 110px; } .pos-br2 { top: 315px; left: 155px; }
-        .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
-        .pos-y6 { top: 450px; left: 220px; width: 38px; height: 70px; } .pos-y5 { top: 450px; right: 25px; width: 38px; height: 70px; }
-        .counter-box { position: absolute; top: 535px; left: 82px; width: 200px; height: 38px; background: #eee; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #888; border: 1px solid #ccc; }
-        .pos-br3 { top: 585px; left: 65px; width: 32px; height: 50px; } .pos-br4 { top: 645px; left: 65px; width: 32px; height: 50px; }
-        .pos-y7 { top: 585px; right: 30px; width: 38px; height: 75px; } .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
-        .pos-s1 { top: 70px; left: 10px; width: 62px; height: 40px; } .pos-s2 { top: 70px; left: 78px; width: 62px; height: 40px; } .pos-s3 { top: 70px; left: 146px; width: 62px; height: 40px; } .pos-s4 { top: 70px; left: 214px; width: 62px; height: 40px; } .pos-s5 { top: 70px; left: 282px; width: 62px; height: 40px; } .pos-s6 { top: 140px; left: 15px; width: 55px; height: 90px; } .pos-s7 { top: 140px; right: 15px; width: 55px; height: 90px; } .pos-s8 { top: 240px; left: 75px; width: 55px; height: 90px; } .pos-s9 { top: 305px; left: 135px; width: 85px; height: 45px; }
+        /* --- 매장 좌표 설정 --- */
+        .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } 
+        .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
+        .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } 
+        .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
+        .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } 
+        .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
+        .pos-b5 { top: 130px; right: 25px; width: 35px; height: 55px; } 
+        .pos-b6 { top: 195px; right: 25px; width: 35px; height: 55px; }
+        .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } 
+        .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
+        
+        /* 아일랜드 구역 수정된 정렬 */
+        .island-y { transform: rotate(-45deg); width: 60px; height: 85px; }
+        .island-br { transform: rotate(-45deg); width: 35px; height: 70px; }
+        .pos-y3 { top: 175px; left: 142px; } /* 왼쪽 위 (Y3) */
+        .pos-br2 { top: 182px; left: 212px; } /* 오른쪽 위 (Br2) */
+        .pos-br1 { top: 250px; left: 112px; } /* 왼쪽 아래 (Br1) */
+        .pos-y4 { top: 257px; left: 182px; } /* 오른쪽 아래 (Y4) */
 
-        /* 팝업 스타일 */
+        .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } 
+        .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
+        .pos-y6 { top: 450px; left: 220px; width: 38px; height: 70px; } 
+        .pos-y5 { top: 450px; right: 25px; width: 38px; height: 70px; }
+        .counter-box { position: absolute; top: 535px; left: 82px; width: 200px; height: 38px; background: #eee; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #888; border: 1px solid #ccc; }
+        .pos-br3 { top: 585px; left: 65px; width: 32px; height: 50px; } 
+        .pos-br4 { top: 645px; left: 65px; width: 32px; height: 50px; }
+        .pos-y7 { top: 585px; right: 30px; width: 38px; height: 75px; } 
+        .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } 
+        .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
+
+        /* --- 매장 창고 좌표 설정 --- */
+        .pos-s1 { top: 70px; left: 10px; width: 62px; height: 40px; } 
+        .pos-s2 { top: 70px; left: 78px; width: 62px; height: 40px; } 
+        .pos-s3 { top: 70px; left: 146px; width: 62px; height: 40px; } 
+        .pos-s4 { top: 70px; left: 214px; width: 62px; height: 40px; } 
+        .pos-s5 { top: 70px; left: 282px; width: 62px; height: 40px; } 
+        .pos-s6 { top: 140px; left: 15px; width: 55px; height: 90px; } 
+        .pos-s7 { top: 140px; right: 15px; width: 55px; height: 90px; } 
+        .pos-s8 { top: 240px; left: 75px; width: 55px; height: 90px; } 
+        .pos-s9 { top: 305px; left: 135px; width: 85px; height: 45px; }
+
+        /* 팝업 UI */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:flex-end; }
         .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
         .layer-stack { display: flex; flex-direction: column-reverse; gap: 8px; overflow-y: auto; padding: 10px 0; }
@@ -126,16 +153,20 @@
 
 <script>
     let isEdit = false; let storage = {}; let currId = '';
+    
+    // 데이터 불러오기 (로컬 저장소)
     function loadData() {
         const localData = localStorage.getItem('xexymix_map_data');
         if (localData) storage = JSON.parse(localData);
     }
     window.onload = loadData;
+
     function toggleEdit() {
         isEdit = !isEdit;
         document.getElementById('editBtn').classList.toggle('active', isEdit);
         document.body.classList.toggle('edit-mode-active', isEdit);
     }
+
     function openPop(id, layers) {
         currId = id;
         const container = document.getElementById('popLayers');
@@ -156,6 +187,7 @@
             `<button onclick="closePopOnly()" style="width:100%; padding:16px; background:#333; color:white; border:none; border-radius:12px;">닫기</button>`;
         document.getElementById('overlay').style.display = 'flex';
     }
+
     function saveToLocal() {
         const inputs = document.querySelectorAll('.layer-textarea');
         const arr = [];
@@ -164,7 +196,9 @@
         localStorage.setItem('xexymix_map_data', JSON.stringify(storage));
         document.getElementById('overlay').style.display = 'none';
     }
+
     function closePopOnly() { document.getElementById('overlay').style.display = 'none'; }
+
     function searchGlobal(q) {
         document.querySelectorAll('.box').forEach(b => b.classList.remove('blink'));
         if(!q.trim()) return;
