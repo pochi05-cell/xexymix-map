@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고지도 - Y3-4 그리드 버전</title>
+    <title>젝시믹스 재고지도 - 아일랜드 밀착 버전</title>
     <style>
         :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; --highlight: #ff4d4d; }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; }
@@ -14,44 +14,39 @@
         .btn.active { background: var(--highlight); color: white; }
         #backupBtn { display: none; background: #444; color: white; }
 
-        .edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500; display: none; pointer-events: none; }
-        body.edit-mode .edit-overlay { display: block; }
-
         .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; }
-        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; }
+        .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; }
         
-        .blue { background-color: var(--blue) !important; }
-        .brown { background-color: var(--brown) !important; }
         .yellow { background-color: var(--yellow) !important; }
+        .brown { background-color: var(--brown) !important; }
+        .blue { background-color: var(--blue) !important; }
 
-        /* [아일랜드 박스 설정] */
+        /* 아일랜드 특수 설정 */
         .island { transform: rotate(-45deg); width: 68px; height: 68px; }
         #Y3 { z-index: 10; }
         #Y4 { z-index: 10; }
-        #Y3-4 { z-index: 100; width: 85px !important; height: 85px !important; font-size: 14px; box-shadow: 0 0 12px rgba(0,0,0,0.3); } 
+        #Y3-4 { width: 90px !important; height: 90px !important; z-index: 100; font-size: 13px; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
         .island-sq { transform: rotate(-45deg); width: 45px !important; height: 45px !important; z-index: 50; }
 
-        /* [Y3-4 전용 2x2 그리드 레이아웃] */
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .grid-item { background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-        .grid-item b { display: block; margin-bottom: 5px; color: var(--accent); }
+        /* 2x2 그리드 레이아웃 */
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .grid-item { background: #f9f9f9; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
+        .grid-item b { display: block; font-size: 11px; margin-bottom: 4px; color: var(--accent); }
 
-        .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; z-index: 1000 !important; }
+        .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; z-index: 1100 !important; }
         @keyframes blink { 50% { opacity: 0.3; } }
 
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:3000; align-items:flex-end; justify-content:center; }
         .pop-content { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 20px; box-sizing: border-box; }
         .layer-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; cursor: pointer; }
-        textarea { width: 100%; height: 55px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; }
+        textarea { width: 100%; height: 50px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-<div class="edit-overlay"></div>
-
 <div class="global-header">
-    <button class="btn" onclick="toggleDrawer()">📋</button>
+    <button class="btn">📋</button>
     <input type="text" id="searchInput" placeholder="검색..." onkeyup="search(this.value)">
     <button id="backupBtn" class="btn" onclick="openBackup()">💾</button>
     <button id="editBtn" class="btn" onclick="toggleEdit()">✏️</button>
@@ -67,17 +62,38 @@
 <script>
     const shopBoxes = [
         {id:'Y1', c:'yellow', t:70, l:60, w:90, h:35, f:2}, {id:'Y2', c:'yellow', t:70, r:30, w:90, h:35, f:2},
-        {id:'Y3', c:'blue island', t:135, l:120, f:1},
-        {id:'Y3-4', c:'blue island', t:180, l:160, f:4}, // Y3-4는 4칸(2x2)
-        {id:'Y4', c:'blue island', t:240, l:215, f:1},
-        {id:'Br1', c:'brown island-sq', t:210, l:100, f:4},
-        {id:'Br2', c:'brown island-sq', t:255, l:145, f:4}
+        
+        // [아일랜드 배치 수정: Y3를 Y3-4 쪽으로 밀착]
+        {id:'Y3', c:'blue island', t:142, l:133, f:1},     // 좌표 수정 (찰싹 붙음)
+        {id:'Y3-4', c:'blue island', t:175, l:158, f:4}, 
+        {id:'Y4', c:'blue island', t:238, l:218, f:1},
+        
+        {id:'Br1', c:'brown island-sq', t:210, l:95, f:4},
+        {id:'Br2', c:'brown island-sq', t:255, l:140, f:4},
+
+        {id:'B1', c:'blue', t:130, l:25, w:38, h:55, f:1}, {id:'B2', c:'blue', t:195, l:25, w:38, h:55, f:1},
+        {id:'B3', c:'blue', t:260, l:25, w:38, h:55, f:1}, {id:'B4', c:'blue', t:325, l:25, w:38, h:55, f:1},
+        {id:'B5', c:'blue', t:130, r:25, w:38, h:55, f:1}, {id:'B6', c:'blue', t:195, r:25, w:38, h:55, f:1},
+        {id:'B7', c:'blue', t:260, r:25, w:38, h:55, f:1}, {id:'B8', c:'blue', t:325, r:25, w:38, h:55, f:1},
+        
+        {id:'B9', c:'blue', t:395, l:85, w:70, h:38, f:1}, {id:'B10', c:'blue', t:395, r:85, w:70, h:38, f:1},
+        {id:'Y5', c:'yellow', t:450, r:25, w:38, h:70, f:4}, {id:'Y6', c:'yellow', t:450, l:220, w:38, h:70, f:4},
+        {id:'Br3', c:'brown', t:585, l:65, w:32, h:50, f:2}, {id:'Br4', c:'brown', t:645, l:65, w:32, h:50, f:2},
+        {id:'Y7', c:'yellow', t:585, r:30, w:38, h:75, f:4}, {id:'Y8', c:'yellow', t:650, l:145, w:80, h:45, f:2},
+        {id:'Y9', c:'yellow', t:650, l:235, w:80, h:45, f:2}
     ];
 
-    let isEdit = false, storage = JSON.parse(localStorage.getItem('xexy_v11_data')) || {};
+    const stockBoxes = [
+        {id:'S1', t:70, l:10}, {id:'S2', t:70, l:78}, {id:'S3', t:70, l:146}, {id:'S4', t:70, l:214}, {id:'S5', t:70, l:282},
+        {id:'S6', t:140, l:15, w:55, h:90}, {id:'S7', t:140, r:15, w:55, h:90}, {id:'S8', t:240, l:75, w:55, h:90}, {id:'S9', t:305, l:135, w:85, h:45}
+    ];
+
+    let isEdit = false, currId = null;
+    let storage = JSON.parse(localStorage.getItem('xexy_v_final_data')) || {};
 
     function init() {
         createBoxes(shopBoxes, 'shopMap', false);
+        createBoxes(stockBoxes, 'stockMap', true);
     }
 
     function createBoxes(data, targetId, isStock) {
@@ -87,7 +103,7 @@
             div.id = b.id;
             div.className = `box ${isStock ? 'blue' : b.c}`;
             div.innerText = b.id;
-            let pos = `top:${b.t}px; ${b.l?'left:'+b.l+'px':'right:'+b.r+'px'}; width:${b.w||60}px; height:${b.h||40}px;`;
+            let pos = `top:${b.t}px; ${b.l?'left:'+b.l+'px': (b.r?'right:'+b.r+'px':'')}; width:${b.w||60}px; height:${b.h||40}px;`;
             div.style.cssText = pos;
             div.onclick = () => openPop(b.id, b.f || 1);
             target.appendChild(div);
@@ -100,14 +116,12 @@
         let html = '';
 
         if(id === 'Y3-4') {
-            // Y3-4 전용 2x2 그리드 레이아웃
             html = `<div class="grid-container">`;
             for(let i=0; i<4; i++) {
                 html += `<div class="grid-item"><b>영역 ${i+1}</b><textarea id="ipt_${i}" ${!isEdit?'readonly':''}>${saved[i]||''}</textarea></div>`;
             }
             html += `</div>`;
         } else {
-            // 일반 리스트 레이아웃
             for(let i=0; i<f; i++) {
                 html += `<div class="layer-row"><b>${i+1}F</b><textarea id="ipt_${i}" ${!isEdit?'readonly':''}>${saved[i]||''}</textarea></div>`;
             }
@@ -119,17 +133,29 @@
     function toggleEdit() {
         isEdit = !isEdit;
         document.getElementById('editBtn').classList.toggle('active', isEdit);
+        document.getElementById('backupBtn').style.display = isEdit ? 'flex' : 'none';
     }
 
     function save() {
         const ipts = document.querySelectorAll('#popLayers textarea');
         storage[currId] = Array.from(ipts).map(i => i.value);
-        localStorage.setItem('xexy_v11_data', JSON.stringify(storage));
+        localStorage.setItem('xexy_v_final_data', JSON.stringify(storage));
         closePop();
     }
 
     function closePop() { document.getElementById('overlay').style.display = 'none'; }
     
+    function search(q) {
+        document.querySelectorAll('.box').forEach(b => b.classList.remove('blink'));
+        if(!q.trim()) return;
+        for(let id in storage) {
+            if(storage[id].some(v => v.toLowerCase().includes(q.toLowerCase()))) {
+                const target = document.getElementById(id);
+                if(target) target.classList.add('blink');
+            }
+        }
+    }
+
     init();
 </script>
 </body>
