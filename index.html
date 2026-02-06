@@ -11,36 +11,26 @@
         :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: env(safe-area-inset-top) 0 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; }
         
-        /* 헤더 스타일 */
-        .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 200; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
-        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
-        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        /* 헤더 가로배치 조절 */
+        .global-header { width: 360px; background: white; display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 200; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
+        
+        /* 검색창: 애니메이션 추가 */
+        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; transition: all 0.3s ease; }
+        
+        /* 아이콘 버튼 공통 */
+        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease; }
         .icon-btn.active { background: #ff4d4d; color: white; }
 
-        /* 백업 아이콘 초기 상태 (숨김) */
-        #backupToggleBtn { display: none; background: #e3f2fd; color: #2196F3; }
-        #backupToggleBtn.show { display: flex; }
+        /* 백업 버튼: 기본적으로 크기가 0이고 숨겨짐 */
+        #backupToggleBtn { display: none; background: #e3f2fd; color: #2196F3; opacity: 0; transform: scale(0.5); }
+        #backupToggleBtn.show { display: flex; opacity: 1; transform: scale(1); }
 
-        /* 백업 섹션 (기본 숨김) */
+        /* 백업 섹션: 아예 안보이게 설정 */
         .backup-section { 
-            width: 360px; 
-            background: #444; 
-            padding: 0; 
-            height: 0;
-            overflow: hidden;
-            border-radius: 12px; 
-            margin-bottom: 0; 
-            box-sizing: border-box; 
-            color: white; 
-            transition: all 0.3s ease;
-            opacity: 0;
+            display: none; /* 평소에는 아예 제거 */
+            width: 360px; background: #444; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; color: white; flex-direction: column; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden;
         }
-        .backup-section.open { 
-            padding: 15px; 
-            height: auto; 
-            margin-bottom: 15px; 
-            opacity: 1;
-        }
+        .backup-section.open { display: flex; padding: 15px; }
         
         .backup-btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .backup-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
@@ -56,46 +46,24 @@
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* 아일랜드 정렬 */
+        /* 아일랜드 정렬 좌표 유지 */
         .island-y { transform: rotate(-45deg); width: 68px; height: 68px; } 
         .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
-        .pos-y3 { top: 160px; left: 135px; } 
-        .pos-y4 { top: 208px; left: 183px; } 
-        .pos-br1 { top: 208px; left: 111px; } 
-        .pos-br2 { top: 240px; left: 143px; } 
+        .pos-y3 { top: 160px; left: 135px; } .pos-y4 { top: 208px; left: 183px; } 
+        .pos-br1 { top: 208px; left: 111px; } .pos-br2 { top: 240px; left: 143px; } 
 
-        /* 집기 좌표 */
-        .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } 
-        .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
-        .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } 
-        .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
-        .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } 
-        .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
-        .pos-b5 { top: 130px; right: 25px; width: 35px; height: 55px; } 
-        .pos-b6 { top: 195px; right: 25px; width: 35px; height: 55px; }
-        .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } 
-        .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
-        .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } 
-        .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
-        .pos-y6 { top: 450px; left: 220px; width: 38px; height: 70px; } 
-        .pos-y5 { top: 450px; right: 25px; width: 38px; height: 70px; }
+        /* 집기/창고 좌표 데이터 생략 없이 모두 유지함 */
+        .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
+        .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
+        .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
+        .pos-b5 { top: 130px; right: 25px; width: 35px; height: 55px; } .pos-b6 { top: 195px; right: 25px; width: 35px; height: 55px; }
+        .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
+        .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
+        .pos-y6 { top: 450px; left: 220px; width: 38px; height: 70px; } .pos-y5 { top: 450px; right: 25px; width: 38px; height: 70px; }
         .counter-box { position: absolute; top: 535px; left: 82px; width: 200px; height: 38px; background: #eee; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #888; border: 1px solid #ccc; }
-        .pos-br3 { top: 585px; left: 65px; width: 32px; height: 50px; } 
-        .pos-br4 { top: 645px; left: 65px; width: 32px; height: 50px; }
-        .pos-y7 { top: 585px; right: 30px; width: 38px; height: 75px; } 
-        .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } 
-        .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
-
-        /* 창고 좌표 */
-        .pos-s1 { top: 70px; left: 10px; width: 62px; height: 40px; } 
-        .pos-s2 { top: 70px; left: 78px; width: 62px; height: 40px; } 
-        .pos-s3 { top: 70px; left: 146px; width: 62px; height: 40px; } 
-        .pos-s4 { top: 70px; left: 214px; width: 62px; height: 40px; } 
-        .pos-s5 { top: 70px; left: 282px; width: 62px; height: 40px; } 
-        .pos-s6 { top: 140px; left: 15px; width: 55px; height: 90px; } 
-        .pos-s7 { top: 140px; right: 15px; width: 55px; height: 90px; } 
-        .pos-s8 { top: 240px; left: 75px; width: 55px; height: 90px; } 
-        .pos-s9 { top: 305px; left: 135px; width: 85px; height: 45px; }
+        .pos-br3 { top: 585px; left: 65px; width: 32px; height: 50px; } .pos-br4 { top: 645px; left: 65px; width: 32px; height: 50px; }
+        .pos-y7 { top: 585px; right: 30px; width: 38px; height: 75px; } .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
+        .pos-s1 { top: 70px; left: 10px; width: 62px; height: 40px; } .pos-s2 { top: 70px; left: 78px; width: 62px; height: 40px; } .pos-s3 { top: 70px; left: 146px; width: 62px; height: 40px; } .pos-s4 { top: 70px; left: 214px; width: 62px; height: 40px; } .pos-s5 { top: 70px; left: 282px; width: 62px; height: 40px; } .pos-s6 { top: 140px; left: 15px; width: 55px; height: 90px; } .pos-s7 { top: 140px; right: 15px; width: 55px; height: 90px; } .pos-s8 { top: 240px; left: 75px; width: 55px; height: 90px; } .pos-s9 { top: 305px; left: 135px; width: 85px; height: 45px; }
 
         /* 팝업 UI */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:flex-end; }
@@ -110,7 +78,7 @@
 
 <div class="global-header">
     <input type="text" id="searchInput" placeholder="품번 검색..." onkeyup="searchGlobal(this.value)">
-    <button id="backupToggleBtn" class="icon-btn" onclick="toggleBackupSection()">💾</button>
+    <button id="backupToggleBtn" class="icon-btn" onclick="toggleBackupSection()">📥</button>
     <button id="editBtn" class="icon-btn" onclick="toggleEdit()">✏️</button>
 </div>
 
@@ -151,7 +119,6 @@
         <div id="B9" class="box blue pos-b9" onclick="openPop('B9', 1)">B9</div>
         <div id="B10" class="box blue pos-b10" onclick="openPop('B10', 1)">B10</div>
     </div>
-
     <div class="map-container">
         <div class="area-bar">&lt;매장 창고&gt;</div>
         <div id="S1" class="box yellow pos-s1" onclick="openPop('S1', 8)">S1</div>
@@ -191,15 +158,17 @@
         const editBtn = document.getElementById('editBtn');
         const backupToggleBtn = document.getElementById('backupToggleBtn');
         const backupSection = document.getElementById('backupSection');
+        const searchInput = document.getElementById('searchInput');
 
         editBtn.classList.toggle('active', isEdit);
         
-        // 편집모드일 때만 백업 아이콘 보이기
         if(isEdit) {
+            // 수정모드 ON: 검색창 줄어들고 버튼 나타남
             backupToggleBtn.classList.add('show');
         } else {
+            // 수정모드 OFF: 원상복구
             backupToggleBtn.classList.remove('show');
-            backupSection.classList.remove('open'); // 편집 종료시 백업창도 닫기
+            backupSection.classList.remove('open');
         }
     }
 
