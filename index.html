@@ -10,29 +10,24 @@
     
     <style>
         :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
-        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: env(safe-area-inset-top) 0 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; transition: background 0.3s; }
+        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: env(safe-area-inset-top) 0 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; }
         
         body.edit-mode-active { background: #1a1a1a; }
-        body.edit-mode-active .map-container { background: #e0e0e0; transition: 0.3s; }
-        body.edit-mode-active .area-bar { background: #d0d0d0; }
-
         .global-header { width: 360px; background: white; display: flex; gap: 10px; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 200; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
-        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; transition: 0.2s; }
-        .icon-btn.active { background: #ff4d4d; color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(255,77,77,0.5); }
+        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; }
+        .icon-btn.active { background: #ff4d4d; color: white; transform: scale(1.1); }
 
         .main-wrapper { display: flex; flex-direction: column; gap: 15px; align-items: center; }
         .map-container { background: white; width: 360px; height: 750px; position: relative; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden; flex-shrink: 0; }
-
-        @media (min-width: 750px) { .main-wrapper { flex-direction: row; align-items: flex-start; } .global-header { width: 735px; } }
-
         .area-bar { background: #f8f8f8; height: 45px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; border-bottom: 1px solid #eee; color: #333; }
-        .box { position: absolute; border: 1.5px solid #333; cursor: pointer; z-index: 10; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background-clip: padding-box; pointer-events: auto !important; }
+        
+        .box { position: absolute; border: 1.5px solid #333; cursor: pointer; z-index: 10; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background-clip: padding-box; }
         .yellow { background: var(--yellow); } .brown { background: var(--brown); } .blue { background: var(--blue); }
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* --- 매장 일반 좌표 --- */
+        /* --- 매장 집기 좌표 --- */
         .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } 
         .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
         .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } 
@@ -44,20 +39,15 @@
         .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } 
         .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
 
-        /* --- [집중 수정] 아일랜드 중앙 4분할 사각형 배치 --- */
-        /* 이미지와 동일하게 대각선 방향으로 완벽 밀착 */
+        /* --- 아일랜드 중앙 4분할 (이미지 형태) --- */
         .island-y { transform: rotate(-45deg); width: 68px; height: 68px; } 
         .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
 
-        /* 상단 노란색 그룹 (Y3, Y4) */
-        .pos-y3 { top: 165px; left: 134px; z-index: 11; } 
-        .pos-y4 { top: 213px; left: 182px; z-index: 11; } 
+        .pos-y3 { top: 160px; left: 135px; } 
+        .pos-y4 { top: 208px; left: 183px; } 
+        .pos-br1 { top: 208px; left: 111px; } 
+        .pos-br2 { top: 240px; left: 143px; } 
 
-        /* 하단 갈색 그룹 (Br1, Br2) - Y3, Y4의 변에 맞춰 밀착 */
-        .pos-br1 { top: 213px; left: 110px; z-index: 12; } 
-        .pos-br2 { top: 245px; left: 142px; z-index: 12; } 
-
-        /* 나머지 집기 좌표 */
         .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } 
         .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
         .pos-y6 { top: 450px; left: 220px; width: 38px; height: 70px; } 
@@ -80,7 +70,7 @@
         .pos-s8 { top: 240px; left: 75px; width: 55px; height: 90px; } 
         .pos-s9 { top: 305px; left: 135px; width: 85px; height: 45px; }
 
-        /* 팝업 레이아웃 */
+        /* 팝업 UI */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:flex-end; }
         .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
         .layer-stack { display: flex; flex-direction: column-reverse; gap: 8px; overflow-y: auto; padding: 10px 0; }
