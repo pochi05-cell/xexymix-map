@@ -2,103 +2,96 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>젝시믹스 재고지도 (모바일 최적화)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>젝시믹스 재고지도 (레이아웃 고정판)</title>
     <style>
         :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
         
-        /* [핵심 수정] body의 고정 높이와 hidden 속성 제거 */
         body { 
             font-family: -apple-system, sans-serif; 
             background: #333; 
             margin: 0; 
-            padding: 0; 
+            padding: 10px 0; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            min-height: 100vh; /* 최소 높이만 지정 */
-            overflow-y: auto;  /* 세로 스크롤 허용 */
-            -webkit-overflow-scrolling: touch; /* 아이폰 부드러운 스크롤 */
+            min-height: 100vh;
+            overflow-y: auto;
         }
-        
-        /* 수정 모드 효과 */
-        body.edit-active .area-bar, body.edit-active .counter-box, body.edit-active .map-container { background-color: #999 !important; transition: 0.3s; }
-        body.edit-active .box { filter: brightness(1.1); z-index: 1000 !important; border: 2px solid #000; pointer-events: auto !important; }
 
-        /* 상단바 폭 유지 및 모바일 대응 */
+        /* [상단바] 가로폭 고정 및 중앙 정렬 */
         .global-header { 
-            width: 710px; 
-            max-width: 98vw; /* 화면보다 커지지 않게 조정 */
+            width: 360px; /* 지도의 한쪽 폭에 맞춤 */
             background: white; 
             display: flex; 
             gap: 10px; 
             padding: 12px; 
-            margin-top: 10px; 
-            border-radius: 12px 12px 0 0; 
+            border-radius: 12px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
             z-index: 200; 
             box-sizing: border-box; 
-            align-items: center; 
-            position: sticky; /* 스크롤해도 검색창은 위에 고정 */
-            top: 0;
+            margin-bottom: 10px;
+            position: sticky;
+            top: 10px;
         }
-        #searchInput { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+        #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+        .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; }
+        .icon-btn.active { background: #ff4d4d; color: white; }
 
-        /* 지도 영역 스크롤 대응 */
+        /* [지도 컨테이너] 모바일에서는 세로로 나열 */
         .main-wrapper { 
-            width: 710px; 
-            max-width: 98vw;
             display: flex; 
-            gap: 2px; 
-            background: #ccc; 
-            padding: 0 0 10px 0; 
-            border-radius: 0 0 12px 12px; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2); 
-            position: relative; 
-            box-sizing: border-box;
-            margin-bottom: 20px; /* 하단 여유 공간 */
+            flex-direction: column; /* 세로 나열 */
+            gap: 15px; 
+            align-items: center;
         }
-        
-        /* 각 지도 컨테이너 */
-        .map-container { background: white; width: 50%; height: 750px; position: relative; overflow: hidden; transition: 0.3s; }
 
-        /* 이하 상자 및 좌표 스타일은 동일 (생략하지 않고 통합 코드에 포함) */
-        .area-bar { background: #f8f8f8; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #333; font-size: 13px; border-bottom: 1px solid #eee; position: relative; z-index: 10; }
-        .divider { position: absolute; top: 375px; left: 0; width: 100%; height: 2px; background: #eee; z-index: 5; }
-        .sub-label { position: absolute; top: 150px; left: 0; width: 100%; text-align: center; color: #ccc; font-weight: bold; font-size: 14px; }
-        .box { position: absolute; border: 1.5px solid #333; cursor: pointer; z-index: 10; border-radius: 1px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #333; transition: 0.2s; background-clip: padding-box; }
+        /* 지도 한 칸의 크기를 360px x 700px로 완전 고정 */
+        .map-container { 
+            background: white; 
+            width: 360px; 
+            height: 700px; 
+            position: relative; 
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            overflow: hidden;
+            flex-shrink: 0; /* 크기 줄어듦 방지 */
+        }
+
+        /* 데스크탑(넓은 화면)에서는 다시 가로로 배치 */
+        @media (min-width: 750px) {
+            .main-wrapper { flex-direction: row; align-items: flex-start; }
+            .global-header { width: 735px; }
+        }
+
+        .area-bar { background: #f8f8f8; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border-bottom: 1px solid #eee; }
+        .box { position: absolute; border: 1.5px solid #333; cursor: pointer; z-index: 10; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background-clip: padding-box; }
         .yellow { background: var(--yellow); } .brown { background: var(--brown); } .blue { background: var(--blue); }
-        .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; border-color: white !important; }
+        .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* 좌표 설정 (하단 매장창고 위주 재조정) */
-        .pos-s1 { top: 420px; left: 5px; width: 62px; height: 40px; }
-        .pos-s2 { top: 420px; left: 70px; width: 62px; height: 40px; }
-        .pos-s3 { top: 420px; left: 135px; width: 62px; height: 40px; }
-        .pos-s4 { top: 420px; left: 200px; width: 62px; height: 40px; }
-        .pos-s5 { top: 420px; left: 265px; width: 62px; height: 40px; }
-        .pos-s6 { top: 500px; left: 10px; width: 50px; height: 80px; }
-        .pos-s7 { top: 500px; right: 10px; width: 50px; height: 80px; }
-        .pos-s8 { top: 600px; left: 60px; width: 50px; height: 80px; }
-        .pos-s9 { top: 680px; left: 120px; width: 75px; height: 40px; }
+        /* 좌표 데이터 (이미지 비율에 맞춰 재고정) */
+        .pos-s1 { top: 410px; left: 10px; width: 62px; height: 40px; } .pos-s2 { top: 410px; left: 78px; width: 62px; height: 40px; }
+        .pos-s3 { top: 410px; left: 146px; width: 62px; height: 40px; } .pos-s4 { top: 410px; left: 214px; width: 62px; height: 40px; }
+        .pos-s5 { top: 410px; left: 282px; width: 62px; height: 40px; } .pos-s6 { top: 480px; left: 15px; width: 55px; height: 90px; }
+        .pos-s7 { top: 480px; right: 15px; width: 55px; height: 90px; } .pos-s8 { top: 580px; left: 75px; width: 55px; height: 90px; }
+        .pos-s9 { top: 645px; left: 135px; width: 85px; height: 45px; }
+        .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
+        .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } .pos-b2 { top: 195px; left: 20px; width: 35px; height: 55px; }
+        .pos-b3 { top: 260px; left: 20px; width: 35px; height: 55px; } .pos-b4 { top: 325px; left: 20px; width: 35px; height: 55px; }
+        .pos-b5 { top: 130px; right: 25px; width: 35px; height: 55px; } .pos-b6 { top: 195px; right: 25px; width: 35px; height: 55px; }
+        .pos-b7 { top: 260px; right: 25px; width: 35px; height: 55px; } .pos-b8 { top: 325px; right: 25px; width: 35px; height: 55px; }
+        .island-y { transform: rotate(-45deg); width: 60px; height: 85px; } .pos-y3 { top: 180px; left: 140px; } .pos-y4 { top: 245px; left: 195px; }
+        .island-br { transform: rotate(-45deg); width: 35px; height: 70px; } .pos-br1 { top: 255px; left: 110px; } .pos-br2 { top: 315px; left: 155px; }
+        .pos-b9 { top: 395px; left: 85px; width: 70px; height: 38px; } .pos-b10 { top: 395px; right: 85px; width: 70px; height: 38px; }
+        .pos-y6 { top: 450px; left: 220px; width: 38px; height: 70px; } .pos-y5 { top: 450px; right: 25px; width: 38px; height: 70px; }
+        .counter-box { position: absolute; top: 535px; left: 82px; width: 200px; height: 38px; background: #eee; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #888; border: 1px solid #ccc; }
+        .pos-br3 { top: 585px; left: 65px; width: 32px; height: 50px; } .pos-br4 { top: 645px; left: 65px; width: 32px; height: 50px; }
+        .pos-y7 { top: 585px; right: 30px; width: 38px; height: 75px; } .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
 
-        /* 매장 진열 (SHOP) 좌표 */
-        .pos-y1 { top: 80px; left: 55px; width: 85px; height: 35px; } .pos-y2 { top: 80px; right: 25px; width: 85px; height: 35px; }
-        .pos-b1 { top: 140px; left: 15px; width: 32px; height: 55px; } .pos-b2 { top: 205px; left: 15px; width: 32px; height: 55px; }
-        .pos-b3 { top: 270px; left: 15px; width: 32px; height: 55px; } .pos-b4 { top: 335px; left: 15px; width: 32px; height: 55px; }
-        .pos-b5 { top: 140px; right: 20px; width: 32px; height: 55px; } .pos-b6 { top: 205px; right: 20px; width: 32px; height: 55px; }
-        .pos-b7 { top: 270px; right: 20px; width: 32px; height: 55px; } .pos-b8 { top: 335px; right: 20px; width: 32px; height: 55px; }
-        .island-y { transform: rotate(-45deg); width: 55px; height: 80px; } .pos-y3 { top: 190px; left: 130px; } .pos-y4 { top: 250px; left: 180px; }
-        .island-br { transform: rotate(-45deg); width: 32px; height: 65px; } .pos-br1 { top: 260px; left: 105px; } .pos-br2 { top: 315px; left: 145px; }
-        .pos-b9 { top: 410px; left: 70px; width: 65px; height: 35px; } .pos-b10 { top: 410px; right: 70px; width: 65px; height: 35px; }
-        .pos-y6 { top: 455px; left: 205px; width: 35px; height: 65px; } .pos-y5 { top: 455px; right: 20px; width: 35px; height: 65px; }
-        .counter-box { position: absolute; top: 525px; left: 77px; width: 195px; height: 35px; background: #eee; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 11px; color: #888; z-index: 5; border: 1px solid #ccc; }
-        .pos-br3 { top: 575px; left: 55px; width: 28px; height: 45px; } .pos-br4 { top: 630px; left: 55px; width: 28px; height: 45px; }
-        .pos-y7 { top: 575px; right: 25px; width: 35px; height: 65px; } .pos-y8 { bottom: 15px; left: 135px; width: 75px; height: 42px; } .pos-y9 { bottom: 15px; left: 220px; width: 75px; height: 42px; }
-
-        /* 팝업 모바일 대응 */
-        #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; justify-content:center; align-items:center; backdrop-filter: blur(4px); }
-        .pop-content { background:white; width:90%; max-width: 360px; border-radius:12px; padding:20px; max-height: 80vh; display: flex; flex-direction: column; }
+        /* 팝업 스타일 */
+        #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center; }
+        .pop-content { background:white; width:90%; max-width: 350px; border-radius:12px; padding:20px; }
     </style>
 </head>
 <body>
@@ -109,12 +102,8 @@
 </div>
 
 <div class="main-wrapper">
-    <div class="map-container" style="border-right: 1px dashed #ccc;">
-        <div class="area-bar">&lt;지하창고&gt;</div>
-        <div class="sub-label">(업데이트 중)</div>
-        <div class="divider"></div>
-        <div class="area-bar" style="position: absolute; top: 377px; width: 100%; border-bottom: none;">&lt;매장창고&gt;</div>
-        
+    <div class="map-container">
+        <div class="area-bar">&lt;창고 영역&gt;</div>
         <div id="S1" class="box yellow pos-s1" onclick="openPop('S1', 8)">S1</div>
         <div id="S2" class="box yellow pos-s2" onclick="openPop('S2', 8)">S2</div>
         <div id="S3" class="box yellow pos-s3" onclick="openPop('S3', 8)">S3</div>
@@ -124,10 +113,11 @@
         <div id="S7" class="box yellow pos-s7" onclick="openPop('S7', 8)">S7</div>
         <div id="S8" class="box yellow pos-s8" onclick="openPop('S8', 8)">S8</div>
         <div id="S9" class="box yellow pos-s9" onclick="openPop('S9', 8)">S9</div>
+        <div style="position:absolute; top:380px; width:100%; text-align:center; color:#ccc; font-size:12px;">── 매장 창고 분계선 ──</div>
     </div>
 
     <div class="map-container">
-        <div class="area-bar">&lt;매장&gt;</div>
+        <div class="area-bar">&lt;매장 진열 (SHOP)&gt;</div>
         <div class="counter-box">카운터</div>
         <div id="Y1" class="box yellow pos-y1" onclick="openPop('Y1', 2)">Y1</div>
         <div id="Y2" class="box yellow pos-y2" onclick="openPop('Y2', 2)">Y2</div>
@@ -155,7 +145,7 @@
     </div>
 </div>
 
-<div id="overlay"><div class="pop-content"><h4 id="popTitle" style="margin:0 0 15px 0; border-bottom:1px solid #eee; padding-bottom:10px;"></h4><div id="popLayers" style="overflow-y:auto; flex:1; margin-bottom:15px;"></div><div id="popFooter"></div></div></div>
+<div id="overlay"><div class="pop-content"><h4 id="popTitle" style="margin:0 0 15px 0;"></h4><div id="popLayers" style="max-height:300px; overflow-y:auto;"></div><div id="popFooter" style="margin-top:15px;"></div></div></div>
 
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhFYws68vkmdvGntDA0ItTMopwGnSV9glALHN09Cda9SxISlS4hmDkijwGD07ya8pO/exec";
@@ -165,20 +155,18 @@
         const script = document.createElement('script');
         script.src = `${SCRIPT_URL}?callback=setData&t=${new Date().getTime()}`;
         document.body.appendChild(script);
-        setTimeout(() => {
-            const input = document.getElementById('searchInput');
-            if (input.placeholder === "데이터 동기화 중...") {
-                input.placeholder = "품번 검색 (연동 지연)";
-                input.disabled = false;
+        setTimeout(() => { 
+            if (document.getElementById('searchInput').placeholder.includes("동기화")) {
+                document.getElementById('searchInput').placeholder = "품번 검색 (연동 지연)";
+                document.getElementById('searchInput').disabled = false;
             }
         }, 3000);
     }
 
     window.setData = function(data) {
         storage = data;
-        const input = document.getElementById('searchInput');
-        input.placeholder = "품번 검색 (S1, Y1, B1 등)";
-        input.disabled = false;
+        document.getElementById('searchInput').placeholder = "품번 검색 (S1, Y1 등)";
+        document.getElementById('searchInput').disabled = false;
     };
 
     window.onload = loadData;
@@ -186,7 +174,7 @@
     function toggleEdit() {
         isEdit = !isEdit;
         document.getElementById('editBtn').classList.toggle('active', isEdit);
-        document.body.classList.toggle('edit-active', isEdit);
+        alert(isEdit ? "수정 모드 활성화" : "수정 모드 해제");
     }
 
     function openPop(id, layers) {
@@ -196,25 +184,22 @@
         document.getElementById('popTitle').innerText = id + " 위치 정보";
         const saved = storage[id] || [];
         for(let i=layers; i>=1; i--) {
-            container.innerHTML += `<div style="display:flex; flex-direction:column; margin-bottom:12px; gap:5px;">
-                <span style="font-size:12px; font-weight:bold; color:#555;">${i}층</span>
-                <textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; resize:none; min-height:45px; box-sizing:border-box; background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea>
+            container.innerHTML += `<div style="margin-bottom:10px;">
+                <span style="font-size:12px; font-weight:bold;">${i}층</span>
+                <textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px; resize:none; background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea>
             </div>`;
         }
-        document.getElementById('popFooter').innerHTML = isEdit ? `<button onclick="saveAndClose()" style="width:100%; padding:14px; background:#4CAF50; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">저장 후 닫기</button>` : `<button onclick="closePopOnly()" style="width:100%; padding:14px; background:#333; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">닫기</button>`;
+        document.getElementById('popFooter').innerHTML = isEdit ? `<button onclick="saveAndClose()" style="width:100%; padding:12px; background:#4CAF50; color:white; border:none; border-radius:8px; font-weight:bold;">저장</button>` : `<button onclick="closePopOnly()" style="width:100%; padding:12px; background:#333; color:white; border:none; border-radius:8px;">닫기</button>`;
         document.getElementById('overlay').style.display = 'flex';
     }
 
     function saveAndClose() {
-        const btn = document.querySelector('#popFooter button');
-        btn.disabled = true; btn.innerText = "저장 중...";
         const inputs = document.querySelectorAll('.layer-textarea');
         const arr = [];
         inputs.forEach(ipt => { arr[ipt.dataset.idx] = ipt.value; });
         storage[currId] = arr;
         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(storage), mode: 'no-cors' })
-        .then(() => { document.getElementById('overlay').style.display = 'none'; setTimeout(loadData, 500); })
-        .catch(() => { alert("저장 실패!"); btn.disabled = false; btn.innerText = "다시 시도"; });
+        .then(() => { document.getElementById('overlay').style.display = 'none'; setTimeout(loadData, 500); });
     }
 
     function closePopOnly() { document.getElementById('overlay').style.display = 'none'; }
