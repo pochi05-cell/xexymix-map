@@ -3,28 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>젝시믹스 재고지도 (백업기능 포함)</title>
+    <title>젝시믹스 재고지도</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/850/850810.png">
     
     <style>
         :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: env(safe-area-inset-top) 0 10px 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-y: auto; }
         
-        body.edit-mode-active { background: #1a1a1a; }
+        /* 헤더 스타일 */
         .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 200; box-sizing: border-box; margin-bottom: 10px; position: sticky; top: 10px; }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
         .icon-btn { width: 40px; height: 40px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         .icon-btn.active { background: #ff4d4d; color: white; transform: scale(1.1); }
 
-        /* 백업/복구 섹션 스타일 */
-        .backup-section { width: 360px; display: none; background: #444; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-sizing: border-box; color: white; }
-        body.edit-mode-active .backup-section { display: block; }
-        .backup-btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .backup-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; }
-        #backupArea { width: 100%; height: 60px; margin-top: 10px; border-radius: 6px; font-size: 10px; padding: 5px; box-sizing: border-box; resize: none; border: 1px solid #666; background: #222; color: #aaa; }
+        /* 백업 섹션 */
+        .backup-section { width: 360px; background: #444; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; color: white; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .backup-btn-group { display: flex; gap: 10px; }
+        .backup-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        #backupArea { width: 100%; height: 60px; border-radius: 6px; font-size: 10px; padding: 8px; box-sizing: border-box; resize: none; border: 1px solid #666; background: #222; color: #eee; }
 
+        /* 지도 레이아웃 */
         .main-wrapper { display: flex; flex-direction: column; gap: 15px; align-items: center; }
         .map-container { background: white; width: 360px; height: 750px; position: relative; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden; flex-shrink: 0; }
         .area-bar { background: #f8f8f8; height: 45px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; border-bottom: 1px solid #eee; color: #333; }
@@ -34,7 +33,7 @@
         .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* --- 아일랜드 중앙 정렬 좌표 --- */
+        /* 아일랜드 정렬 (수정된 중앙 대각선 배치) */
         .island-y { transform: rotate(-45deg); width: 68px; height: 68px; } 
         .island-br { transform: rotate(-45deg); width: 45px; height: 45px; }
         .pos-y3 { top: 160px; left: 135px; } 
@@ -42,7 +41,7 @@
         .pos-br1 { top: 208px; left: 111px; } 
         .pos-br2 { top: 240px; left: 143px; } 
 
-        /* --- 기타 집기 좌표 --- */
+        /* 기타 좌표 */
         .pos-y1 { top: 70px; left: 60px; width: 90px; height: 35px; } 
         .pos-y2 { top: 70px; right: 30px; width: 90px; height: 35px; }
         .pos-b1 { top: 130px; left: 20px; width: 35px; height: 55px; } 
@@ -64,7 +63,7 @@
         .pos-y8 { bottom: 15px; left: 145px; width: 80px; height: 45px; } 
         .pos-y9 { bottom: 15px; left: 235px; width: 80px; height: 45px; }
 
-        /* --- 창고 좌표 --- */
+        /* 창고 좌표 */
         .pos-s1 { top: 70px; left: 10px; width: 62px; height: 40px; } 
         .pos-s2 { top: 70px; left: 78px; width: 62px; height: 40px; } 
         .pos-s3 { top: 70px; left: 146px; width: 62px; height: 40px; } 
@@ -75,13 +74,16 @@
         .pos-s8 { top: 240px; left: 75px; width: 55px; height: 90px; } 
         .pos-s9 { top: 305px; left: 135px; width: 85px; height: 45px; }
 
-        /* 팝업 UI */
+        /* 팝업 UI (수정됨) */
         #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:flex-end; }
         .pop-content { background:white; width:100%; max-width: 400px; border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); box-sizing:border-box; display:flex; flex-direction:column; max-height: 90vh; }
         .layer-stack { display: flex; flex-direction: column-reverse; gap: 8px; overflow-y: auto; padding: 10px 0; }
-        .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
-        .layer-label { width: 35px; font-size: 13px; font-weight: bold; color: #333; text-align: center; border-right: 2px solid #ff4d4d; margin-right: 5px; }
-        .layer-textarea { flex: 1; height: 45px; border: 1px solid #ddd; border-radius: 4px; padding: 8px; font-size: 14px; resize: none; box-sizing: border-box; }
+        .layer-item { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; }
+        
+        /* [수정] 빨간 선 제거 및 심플한 층수 라벨 */
+        .layer-label { width: 35px; font-size: 13px; font-weight: bold; color: #666; text-align: center; }
+        
+        .layer-textarea { flex: 1; height: 45px; border: 1px solid #ddd; border-radius: 6px; padding: 8px; font-size: 14px; resize: none; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -92,8 +94,8 @@
 </div>
 
 <div class="backup-section">
-    <div style="font-size: 14px; font-weight: bold;">📊 데이터 백업/복구</div>
-    <textarea id="backupArea" placeholder="여기에 백업된 코드를 붙여넣고 복구를 누르세요."></textarea>
+    <div style="font-size: 14px; font-weight: bold; color: #ffdb6d;">📊 데이터 백업/복구</div>
+    <textarea id="backupArea" placeholder="여기에 백업 데이터를 붙여넣거나, 추출 버튼을 누르세요."></textarea>
     <div class="backup-btn-group">
         <button class="backup-btn" style="background:#2196F3; color:white;" onclick="exportData()">데이터 추출</button>
         <button class="backup-btn" style="background:#FF9800; color:white;" onclick="importData()">데이터 복구</button>
@@ -166,34 +168,28 @@
     function toggleEdit() {
         isEdit = !isEdit;
         document.getElementById('editBtn').classList.toggle('active', isEdit);
-        document.body.classList.toggle('edit-mode-active', isEdit);
     }
 
-    // 데이터 백업 (추출)
     function exportData() {
         const dataStr = JSON.stringify(storage);
         const area = document.getElementById('backupArea');
         area.value = dataStr;
         area.select();
         document.execCommand('copy');
-        alert("모든 데이터가 텍스트로 복사되었습니다! 메모장에 붙여넣어 백업하세요.");
+        alert("데이터가 복사되었습니다!");
     }
 
-    // 데이터 복구 (가져오기)
     function importData() {
         const area = document.getElementById('backupArea');
-        if(!area.value.trim()) { alert("복구할 텍스트를 입력창에 붙여넣어주세요."); return; }
+        if(!area.value.trim()) { alert("데이터를 붙여넣어주세요."); return; }
         try {
             const imported = JSON.parse(area.value);
-            if(confirm("기존 데이터가 삭제되고 백업된 데이터로 덮어씌워집니다. 진행할까요?")) {
+            if(confirm("데이터를 복구할까요?")) {
                 storage = imported;
                 localStorage.setItem('xexymix_map_data', JSON.stringify(storage));
-                alert("복구가 완료되었습니다!");
                 location.reload();
             }
-        } catch(e) {
-            alert("잘못된 데이터 형식입니다. 복사한 텍스트를 정확히 입력해주세요.");
-        }
+        } catch(e) { alert("잘못된 데이터입니다."); }
     }
 
     function openPop(id, layers) {
@@ -205,7 +201,7 @@
         for(let i=1; i<=layers; i++) {
             container.innerHTML += `
                 <div class="layer-item">
-                    <div class="layer-label">${i}층</div>
+                    <div class="layer-label">${i}F</div>
                     <textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} 
                         style="background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea>
                 </div>`;
