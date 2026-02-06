@@ -3,36 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>젝시믹스 재고지도 - 창고 8층 특화판</title>
+    <title>젝시믹스 재고지도 - 층 선택 배치형</title>
     <style>
         :root { --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --accent: #4CAF50; --highlight: #ff4d4d; }
         body { font-family: -apple-system, sans-serif; background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
         
-        /* 헤더 */
         .global-header { width: 360px; background: white; display: flex; gap: 8px; padding: 10px; border-radius: 0 0 15px 15px; position: sticky; top: 0; z-index: 2000; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         #searchInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
         .btn { width: 42px; height: 42px; border: none; border-radius: 8px; background: #f0f0f0; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         
-        /* 지도 컨테이너 */
         .map-container { background: white; width: 360px; height: 740px; position: relative; border-radius: 15px; margin: 10px 0; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .area-label { background: #eee; padding: 12px; text-align: center; font-weight: bold; }
         .box { position: absolute; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; box-sizing: border-box; transition: 0.2s; z-index: 10; }
         
-        /* 색상 클래스 */
         .yellow { background-color: var(--yellow) !important; }
         .brown { background-color: var(--brown) !important; }
         .blue { background-color: var(--blue) !important; }
 
-        /* 아일랜드 특수 */
-        #Y3-4 { width: 90px !important; height: 90px !important; z-index: 100; font-size: 13px; }
-        .island-sq { transform: rotate(-45deg); width: 45px !important; height: 45px !important; z-index: 50; }
-
-        /* 상태 알림 */
         #assignMsg { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--highlight); color: white; padding: 12px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; z-index: 5000; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .blink { animation: blink 0.6s infinite; background-color: var(--highlight) !important; color: white !important; }
         @keyframes blink { 50% { opacity: 0.4; } }
 
-        /* 사이드바 */
         .drawer { position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: white; z-index: 4000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
         .drawer.open { left: 0; }
         .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3500; display: none; }
@@ -41,22 +32,23 @@
         .drawer-list { flex: 1; overflow-y: auto; padding: 10px; }
         .drawer-item { padding: 12px; border-bottom: 1px solid #f5f5f5; font-size: 13px; cursor: pointer; }
 
-        /* 모달 */
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:6000; align-items:flex-end; justify-content:center; }
         .pop-content { background:white; width:100%; max-width:400px; border-radius:20px 20px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
-        textarea { width: 100%; height: 40px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; }
+        .layer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        textarea { flex: 1; height: 40px; border: 1px solid #ddd; border-radius: 5px; resize: none; padding: 8px; font-size: 14px; box-sizing: border-box; }
+        .assign-here-btn { display: none; background: var(--highlight); color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap; }
     </style>
 </head>
 <body>
 
 <div class="drawer-overlay" onclick="toggleDrawer()"></div>
-<div id="assignMsg">📍 배치할 박스를 선택하세요</div>
+<div id="assignMsg">1. 배치할 박스를 선택하세요</div>
 
 <div id="drawer" class="drawer">
     <div class="drawer-header"><h3>📦 품번 리스트</h3><button onclick="toggleDrawer()" style="border:none; background:none; font-size:22px;">✕</button></div>
     <div style="padding:15px; background:#fffde7;">
         <div style="display:flex; gap:5px;">
-            <input type="text" id="newCode" placeholder="신규 품번" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:4px;">
+            <input type="text" id="newCode" placeholder="신규 품번">
             <button onclick="startAssign()" style="background:var(--accent); color:white; border:none; padding:0 15px; border-radius:4px; font-weight:bold;">배치</button>
         </div>
     </div>
@@ -77,17 +69,8 @@
 <div id="overlay" class="modal"><div class="pop-content">
     <h3 id="popTitle" style="margin-top:0;"></h3>
     <div id="popLayers"></div>
-    <button onclick="saveData()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold;">저장하기</button>
+    <button id="saveBtn" onclick="saveData()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; margin-top:15px; font-weight:bold;">저장하기</button>
     <button onclick="closePop()" style="width:100%; padding:10px; background:#eee; border:none; border-radius:10px; margin-top:8px;">닫기</button>
-</div></div>
-
-<div id="backupModal" class="modal" style="align-items:center;"><div class="pop-content" style="border-radius:20px; width:90%;">
-    <h3>💾 데이터 백업/복구</h3>
-    <textarea id="backupArea" style="height:200px; font-family:monospace;"></textarea>
-    <div style="display:flex; gap:10px; margin-top:15px;">
-        <button onclick="importData()" style="flex:1; padding:12px; background:var(--highlight); color:white; border:none; border-radius:10px;">복구</button>
-        <button onclick="document.getElementById('backupModal').style.display='none'" style="flex:1; padding:12px; background:#eee; border:none; border-radius:10px;">취소</button>
-    </div>
 </div></div>
 
 <script>
@@ -137,35 +120,50 @@
     }
 
     function handleBoxClick(id, maxF) {
+        currId = id;
         if (isAssignMode) {
-            if(!storage[id]) storage[id] = new Array(maxF).fill("");
-            let idx = storage[id].findIndex(v => v === "");
-            if(idx === -1) idx = 0;
-            storage[id][idx] = assignCode;
-            saveToStorage(); isAssignMode = false;
-            document.getElementById('assignMsg').style.display = 'none';
-            alert(`${id} 박스에 배치되었습니다.`);
-            updateList(); search(assignCode);
-        } else {
-            openPop(id, maxF);
+            document.getElementById('assignMsg').innerText = "2. 배치할 층(칸)의 버튼을 누르세요";
         }
+        openPop(id, maxF);
     }
 
     function openPop(id, f) {
-        currId = id; document.getElementById('popTitle').innerText = id;
+        document.getElementById('popTitle').innerText = id;
         const saved = storage[id] || new Array(f).fill("");
         let html = '';
-        if(id === 'Y3-4') {
-            html = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">`;
-            for(let i=0; i<4; i++) html += `<div><b>영역${i+1}</b><textarea id="ipt_${i}">${saved[i]||''}</textarea></div>`;
-            html += `</div>`;
-        } else {
-            for(let i=0; i<f; i++) {
-                html += `<div style="margin-bottom:8px;"><b>${i+1}층</b><textarea id="ipt_${i}">${saved[i]||''}</textarea></div>`;
-            }
+        
+        for(let i=0; i<f; i++) {
+            const label = (id === 'Y3-4') ? `영역 ${i+1}` : `${i+1}층`;
+            html += `
+                <div class="layer-row">
+                    <div style="width:45px; font-size:12px;"><b>${label}</b></div>
+                    <textarea id="ipt_${i}">${saved[i]||''}</textarea>
+                    <button class="assign-here-btn" onclick="confirmAssign(${i})" style="${isAssignMode?'display:block':''}">여기에 배치</button>
+                </div>`;
         }
+        
         document.getElementById('popLayers').innerHTML = html;
+        document.getElementById('saveBtn').style.display = isAssignMode ? 'none' : 'block';
         document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function confirmAssign(floorIdx) {
+        if(!storage[currId]) {
+            const boxData = [...shopBoxes, ...stockBoxes].find(b => b.id === currId);
+            storage[currId] = new Array(boxData.f).fill("");
+        }
+        
+        // 기존 내용이 있으면 콤마로 추가, 없으면 그냥 입력
+        let currentVal = storage[currId][floorIdx].trim();
+        storage[currId][floorIdx] = currentVal ? `${currentVal}, ${assignCode}` : assignCode;
+        
+        saveToStorage();
+        isAssignMode = false;
+        document.getElementById('assignMsg').style.display = 'none';
+        alert(`${currId}의 ${floorIdx+1}층에 '${assignCode}' 배치 완료!`);
+        closePop();
+        updateList();
+        search(assignCode);
     }
 
     function saveData() {
@@ -176,8 +174,11 @@
 
     function startAssign() {
         const val = document.getElementById('newCode').value.trim();
-        if(!val) return;
-        assignCode = val; isAssignMode = true; toggleDrawer();
+        if(!val) { alert("품번을 입력해주세요."); return; }
+        assignCode = val; 
+        isAssignMode = true; 
+        toggleDrawer();
+        document.getElementById('assignMsg').innerText = "1. 배치할 박스를 선택하세요";
         document.getElementById('assignMsg').style.display = 'block';
     }
 
@@ -190,7 +191,9 @@
         let html = '';
         Object.keys(storage).sort().forEach(id => {
             const items = storage[id].filter(v => v && v.trim() !== "");
-            if(items.length > 0) html += `<div class="drawer-item" onclick="search('${items[0]}')"><b>[${id}]</b> ${items.join(', ')}</div>`;
+            if(items.length > 0) {
+                html += `<div class="drawer-item" onclick="search('${items[0]}')"><b>[${id}]</b> ${items.join(', ')}</div>`;
+            }
         });
         document.getElementById('drawerList').innerHTML = html;
     }
@@ -210,12 +213,7 @@
         document.getElementById('backupArea').value = JSON.stringify(storage);
         document.getElementById('backupModal').style.display = 'flex';
     }
-    function importData() {
-        try {
-            storage = JSON.parse(document.getElementById('backupArea').value);
-            saveToStorage(); location.reload();
-        } catch(e) { alert("데이터 오류"); }
-    }
+    
     function saveToStorage() { localStorage.setItem('xexy_v_final_data', JSON.stringify(storage)); }
     function closePop() { document.getElementById('overlay').style.display = 'none'; }
 
