@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>젝시믹스 재고지도 (연동 복구판)</title>
+    <style>
+        :root { --bg: #ffffff; --yellow: #ffdb6d; --brown: #d9d2ae; --blue: #cfd8dc; --highlight: #ff4d4d; }
+        body { font-family: -apple-system, sans-serif; background: #333; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        
+        /* 수정 모드 효과 */
+        body.edit-active .area-bar, body.edit-active .counter-box, body.edit-active .map-container { background-color: #999 !important; transition: 0.3s; }
+        body.edit-active .box { filter: brightness(1.1); z-index: 1000 !important; border: 2px solid #000; pointer-events: auto !important; }
+
+        /* [상단바 가로폭 최적화] */
+        .global-header { 
+            width: 710px; 
+            background: white; 
+            display: flex; 
+            gap: 10px; 
+            padding: 12px; 
+            margin-top: 10px; 
+            border-radius: 12px 12px 0 0; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            z-index: 200; /* 클릭이 안 되는 문제를 방지하기 위해 z-index 상향 */
+            box-sizing: border-box; 
+            align-items: center; 
+            position: relative;
+        }
+        #searchInput { 
+            flex: 1; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            outline: none; 
+            cursor: text; /* 커서 모양 강제 지정 */
+        }
+        .icon-btn { width: 45px; height: 45px; border: none; border-radius: 8px; background: #f0f0f0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.2s; }
+        .icon-btn.active { background: #ff4d4d; color: white; transform: scale(1.05); }
+
+        /* 하단 지도 영역 */
+        .main-wrapper { 
+            width: 710px; 
+            display: flex; 
+            gap: 2px; 
+            background: #ccc; 
+            padding: 0 0 10px 0; 
+            border-radius: 0 0 12px 12px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); 
+            position: relative; 
+            box-sizing: border-box;
+        }
+        .map-container { background: white; width: 354px; height: 690px; position: relative; overflow: hidden; transition: 0.3s; }
+        .area-bar { background: #f8f8f8; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #333; font-size: 13px; border-bottom: 1px solid #eee; position: relative; z-index: 10; }
+        
+        /* 중앙 구분선 및 여백 레이블 */
+        .divider { position: absolute; top: 345px; left: 0; width: 100%; height: 2px; background: #eee; z-index: 5; }
+        .sub-label { position: absolute; top: 150px; left: 0; width: 100%; text-align: center; color: #ccc; font-weight: bold; font-size: 14px; }
+
+        .box { position: absolute; border: 1.5px solid #333; cursor: pointer; z-index: 10; border-radius: 1px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #333; transition: 0.2s; background-clip: padding-box; }
+        .yellow { background: var(--yellow); } .brown { background: var(--brown); } .blue { background: var(--blue); }
+        .blink { animation: blinker 0.6s linear infinite; background: var(--highlight) !important; color: white !important; z-index: 100 !important; border-color: white !important; }
+        @keyframes blinker { 50% { opacity: 0.3; } }
+
+        /* 매장 창고 및 SHOP 좌표 (동일 유지) */
+        .pos-s1 { top: 400px; left: 10px; width: 62px; height: 40px; } .pos-s2 { top: 400px; left: 77px; width: 62px; height: 40px; }
+        .pos-s3 { top: 400px; left: 144px; width: 62px; height: 40px; } .pos-s4 { top: 400px; left: 211px; width: 62px; height: 40px; }
+        .pos-s5 { top: 400px; left: 278px; width: 62px; height: 40px; } .pos-s6 { top: 480px; left: 10px; width: 50px; height: 80px; }
+        .pos-s7 { top: 480px; right: 10px; width: 50px; height: 80px; } .pos-s8 { top: 580px; left: 60px; width: 50px; height: 80px; }
+        .pos-s9 { top: 640px; left: 120px; width: 75px; height: 40px; }
+        .pos-y1 { top: 80px; left: 55px; width: 85px; height: 35px; } .pos-y2 { top: 80px; right: 25px; width: 85px; height: 35px; }
+        .pos-b1 { top: 140px; left: 15px; width: 32px; height: 55px; } .pos-b2 { top: 205px; left: 15px; width: 32px; height: 55px; }
+        .pos-b3 { top: 270px; left: 15px; width: 32px; height: 55px; } .pos-b4 { top: 335px; left: 15px; width: 32px; height: 55px; }
+        .pos-b5 { top: 140px; right: 20px; width: 32px; height: 55px; } .pos-b6 { top: 205px; right: 20px; width: 32px; height: 55px; }
+        .pos-b7 { top: 270px; right: 20px; width: 32px; height: 55px; } .pos-b8 { top: 335px; right: 20px; width: 32px; height: 55px; }
+        .island-y { transform: rotate(-45deg); width: 55px; height: 80px; } .pos-y3 { top: 190px; left: 130px; } .pos-y4 { top: 250px; left: 180px; }
+        .island-br { transform: rotate(-45deg); width: 32px; height: 65px; } .pos-br1 { top: 260px; left: 105px; } .pos-br2 { top: 315px; left: 145px; }
+        .pos-b9 { top: 410px; left: 70px; width: 65px; height: 35px; } .pos-b10 { top: 410px; right: 70px; width: 65px; height: 35px; }
+        .pos-y6 { top: 455px; left: 205px; width: 35px; height: 65px; } .pos-y5 { top: 455px; right: 20px; width: 35px; height: 65px; }
+        .counter-box { position: absolute; top: 525px; left: 77px; width: 195px; height: 35px; background: #eee; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 11px; color: #888; z-index: 5; border: 1px solid #ccc; }
+        .pos-br3 { top: 575px; left: 55px; width: 28px; height: 45px; } .pos-br4 { top: 630px; left: 55px; width: 28px; height: 45px; }
+        .pos-y7 { top: 575px; right: 25px; width: 35px; height: 65px; } .pos-y8 { bottom: 15px; left: 135px; width: 75px; height: 42px; } .pos-y9 { bottom: 15px; left: 220px; width: 75px; height: 42px; }
+
+        /* 팝업 레이아웃 */
+        #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; justify-content:center; align-items:center; backdrop-filter: blur(4px); }
+        .pop-content { background:white; width:340px; border-radius:12px; padding:20px; max-height: 85vh; display: flex; flex-direction: column; }
+        .pop-body { overflow-y: auto; flex: 1; margin-bottom: 15px; }
+        .layer-row { display:flex; flex-direction: column; margin-bottom:12px; gap: 5px; }
+        .layer-label { font-size:12px; font-weight:bold; color: #555; }
+        .layer-textarea { width: 100%; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px; outline:none; resize: none; min-height: 45px; box-sizing: border-box; }
+        .btn-main { width:100%; padding:14px; color:white; border:none; border-radius:8px; font-weight:bold; cursor: pointer; font-size: 15px; }
+        .btn-save { background:#4CAF50; } .btn-close { background:#333; }
+    </style>
+</head>
+<body>
+
+<div class="global-header">
+    <input type="text" id="searchInput" placeholder="데이터 동기화 중..." onkeyup="searchGlobal(this.value)">
+    <button id="editBtn" class="icon-btn" onclick="toggleEdit()">✏️</button>
+</div>
+
+<div class="main-wrapper">
+    <div class="map-container" style="border-right: 1px dashed #ccc;">
+        <div class="area-bar">&lt;지하창고&gt;</div>
+        <div class="sub-label">(업데이트 중)</div>
+        <div class="divider"></div>
+        <div class="area-bar" style="position: absolute; top: 347px; width: 100%; border-bottom: none;">&lt;매장창고&gt;</div>
+        
+        <div id="S1" class="box yellow pos-s1" onclick="openPop('S1', 8)">S1</div>
+        <div id="S2" class="box yellow pos-s2" onclick="openPop('S2', 8)">S2</div>
+        <div id="S3" class="box yellow pos-s3" onclick="openPop('S3', 8)">S3</div>
+        <div id="S4" class="box yellow pos-s4" onclick="openPop('S4', 8)">S4</div>
+        <div id="S5" class="box yellow pos-s5" onclick="openPop('S5', 8)">S5</div>
+        <div id="S6" class="box yellow pos-s6" onclick="openPop('S6', 8)">S6</div>
+        <div id="S7" class="box yellow pos-s7" onclick="openPop('S7', 8)">S7</div>
+        <div id="S8" class="box yellow pos-s8" onclick="openPop('S8', 8)">S8</div>
+        <div id="S9" class="box yellow pos-s9" onclick="openPop('S9', 8)">S9</div>
+    </div>
+
+    <div class="map-container">
+        <div class="area-bar">&lt;매장&gt;</div>
+        <div class="counter-box">카운터</div>
+        <div id="Y1" class="box yellow pos-y1" onclick="openPop('Y1', 2)">Y1</div>
+        <div id="Y2" class="box yellow pos-y2" onclick="openPop('Y2', 2)">Y2</div>
+        <div id="Y3" class="box yellow island-y pos-y3" onclick="openPop('Y3', 4)">Y3</div>
+        <div id="Y4" class="box yellow island-y pos-y4" onclick="openPop('Y4', 4)">Y4</div>
+        <div id="Y5" class="box yellow pos-y5" onclick="openPop('Y5', 4)">Y5</div>
+        <div id="Y6" class="box yellow pos-y6" onclick="openPop('Y6', 4)">Y6</div>
+        <div id="Y7" class="box yellow pos-y7" onclick="openPop('Y7', 4)">Y7</div>
+        <div id="Y8" class="box yellow pos-y8" onclick="openPop('Y8', 2)">Y8</div>
+        <div id="Y9" class="box yellow pos-y9" onclick="openPop('Y9', 2)">Y9</div>
+        <div id="Br1" class="box brown island-br pos-br1" onclick="openPop('Br1', 4)">Br1</div>
+        <div id="Br2" class="box brown island-br pos-br2" onclick="openPop('Br2', 4)">Br2</div>
+        <div id="Br3" class="box brown pos-br3" onclick="openPop('Br3', 2)">Br3</div>
+        <div id="Br4" class="box brown pos-br4" onclick="openPop('Br4', 2)">Br4</div>
+        <div id="B1" class="box blue pos-b1" onclick="openPop('B1', 1)">B1</div>
+        <div id="B2" class="box blue pos-b2" onclick="openPop('B2', 1)">B2</div>
+        <div id="B3" class="box blue pos-b3" onclick="openPop('B3', 1)">B3</div>
+        <div id="B4" class="box blue pos-b4" onclick="openPop('B4', 1)">B4</div>
+        <div id="B5" class="box blue pos-b5" onclick="openPop('B5', 1)">B5</div>
+        <div id="B6" class="box blue pos-b6" onclick="openPop('B6', 1)">B6</div>
+        <div id="B7" class="box blue pos-b7" onclick="openPop('B7', 1)">B7</div>
+        <div id="B8" class="box blue pos-b8" onclick="openPop('B8', 1)">B8</div>
+        <div id="B9" class="box blue pos-b9" onclick="openPop('B9', 1)">B9</div>
+        <div id="B10" class="box blue pos-b10" onclick="openPop('B10', 1)">B10</div>
+    </div>
+</div>
+
+<div id="overlay"><div class="pop-content"><h4 id="popTitle" style="margin:0 0 15px 0; border-bottom:1px solid #eee; padding-bottom:10px;"></h4><div id="popLayers" class="pop-body"></div><div id="popFooter"></div></div></div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhFYws68vkmdvGntDA0ItTMopwGnSV9glALHN09Cda9SxISlS4hmDkijwGD07ya8pO/exec";
+    let isEdit = false; 
+    let storage = {}; 
+    let currId = '';
+
+    // 데이터 로드 함수 (JSONP 방식)
+    function loadData() {
+        const script = document.createElement('script');
+        script.src = `${SCRIPT_URL}?callback=setData&t=${new Date().getTime()}`;
+        document.body.appendChild(script);
+
+        // 3초 내에 응답이 없으면 강제로 검색바 활성화 (안전장치)
+        setTimeout(() => {
+            const input = document.getElementById('searchInput');
+            if (input.placeholder === "데이터 동기화 중...") {
+                input.placeholder = "품번 검색 (연동 지연)";
+                input.disabled = false;
+            }
+        }, 3000);
+    }
+
+    // 콜백 함수
+    window.setData = function(data) {
+        storage = data;
+        const input = document.getElementById('searchInput');
+        input.placeholder = "품번 검색 (S1, Y1, B1 등)";
+        input.disabled = false;
+    };
+
+    window.onload = loadData;
+
+    function toggleEdit() {
+        isEdit = !isEdit;
+        document.getElementById('editBtn').classList.toggle('active', isEdit);
+        document.body.classList.toggle('edit-active', isEdit);
+    }
+
+    function openPop(id, layers) {
+        currId = id;
+        const container = document.getElementById('popLayers');
+        container.innerHTML = '';
+        document.getElementById('popTitle').innerText = id + " 위치 정보";
+        const saved = storage[id] || [];
+        for(let i=layers; i>=1; i--) {
+            container.innerHTML += `<div class="layer-row"><span class="layer-label">${i}층</span><textarea class="layer-textarea" data-idx="${i-1}" ${!isEdit?'readonly':''} style="background:${!isEdit?'#f9f9f9':'#fffde7'}">${saved[i-1]||''}</textarea></div>`;
+        }
+        document.getElementById('popFooter').innerHTML = isEdit ? `<button onclick="saveAndClose()" class="btn-main btn-save">저장 후 닫기</button>` : `<button onclick="closePopOnly()" class="btn-main btn-close">닫기</button>`;
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function saveAndClose() {
+        const btn = document.querySelector('.btn-save');
+        btn.disabled = true; btn.innerText = "저장 중...";
+        const inputs = document.querySelectorAll('.layer-textarea');
+        const arr = [];
+        inputs.forEach(ipt => { arr[ipt.dataset.idx] = ipt.value; });
+        storage[currId] = arr;
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(storage), mode: 'no-cors' })
+        .then(() => { document.getElementById('overlay').style.display = 'none'; setTimeout(loadData, 500); })
+        .catch(() => { alert("저장 실패!"); btn.disabled = false; btn.innerText = "다시 시도"; });
+    }
+
+    function closePopOnly() { document.getElementById('overlay').style.display = 'none'; }
+
+    function searchGlobal(q) {
+        document.querySelectorAll('.box').forEach(b => b.classList.remove('blink'));
+        if(!q.trim()) return;
+        q = q.toLowerCase();
+        for(let id in storage) {
+            if(id.toLowerCase() === q || (storage[id] && storage[id].some(v => v && v.toLowerCase().includes(q)))) {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('blink');
+            }
+        }
+    }
+</script>
+</body>
+</html>
